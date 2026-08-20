@@ -1,0 +1,21 @@
+# helm upgrade --install job-automation ./deploy/helm/job-automation \
+#   -f values.yaml -f values-staging.yaml -n job-automation-staging --create-namespace
+
+imageTag: staging
+
+ingress:
+  enabled: true
+  tls:
+    enabled: false
+
+xing:
+  ingress:
+    host: xing-staging.CHANGEME.example.com
+  cronjob:
+    enabled: false # run manually in staging; avoid sending real applications on a schedule
+
+join:
+  ingress:
+    host: join-staging.CHANGEME.example.com
+  cronjob:
+    enabled: false

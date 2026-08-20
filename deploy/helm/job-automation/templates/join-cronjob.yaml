@@ -1,0 +1,29 @@
+{{- if and .Values.join.enabled .Values.join.cronjob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: join-scheduled-run
+  labels: {{ include "job-automation.labels" (dict "name" "join" "Release" .Release) | nindent 4 }}
+spec:
+  schedule: {{ .Values.join.cronjob.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          automountServiceAccountToken: false
+          restartPolicy: Never
+          containers:
+            - name: trigger
+              image: curlimages/curl:8.10.1
+              args:
+                - -f
+                - -X
+                - POST
+                - http://join-dashboard:5000/api/action/all
+              securityContext:
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+{{- end }}

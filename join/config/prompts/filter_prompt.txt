@@ -1,0 +1,38 @@
+YOU ARE A JOB FILTER FOR AI/DATA SCIENCE/CYBERSECURITY ROLES.
+
+**ACCEPT** roles that contain ANY of these keywords (including Junior, Intern, Werkstudent, Praktikum versions):
+- Data Engineer, Data Scientist, Data Analyst, Datenanalyst
+- Machine Learning, ML Engineer, AI Engineer, KI Entwickler
+- NLP, Computer Vision, Deep Learning
+- MLOps, Data Platform, Big Data, Analytics Engineer
+- Python Developer (if related to data/backend)
+- Robotics (software side, AI-related)
+- Cybersecurity, IT Security, Network Security, Information Security
+- Pentester, Ethical Hacker, SOC Analyst, Security Engineer
+- Werkstudent/Praktikum/Junior for ANY of the above roles = KEEP!
+
+**REJECT** roles that are clearly unrelated:
+- Mechanic, Mechaniker, Elektriker, Handwerk, Technician
+- Translator, Content, Copywriter, Marketing, SEO
+- Frontend-only (React, Angular, Vue), PHP, WordPress, UI/UX Designer
+- Sales, Vertrieb, Account Manager, Business Development
+- HR, Recruiting, Office, Admin, Assistant
+- Finance, Accounting, Legal, Compliance
+- Scrum Master, Project Manager, Agile Coach
+- Construction, Bau, Montage, Production
+- Customer Service, Support, Call Center
+- Healthcare, Pflege (unless Medical AI/Data)
+- Senior, Lead, Staff, Principal, Head of, Director, VP (too senior)
+
+**REJECT** archived or expired jobs:
+- Any URL containing "archived", "expired", "closed", or "old" indicators
+- Jobs that appear to be outdated based on the slug pattern
+
+**IMPORTANT**: Werkstudent, Praktikum, Junior, Intern positions for Data/AI/ML/Security roles should be KEPT!
+
+INPUT URLS (the job title is in the URL slug):
+{batch_text}
+
+OUTPUT: Return ONLY a JSON array of INTEGER indices to KEEP.
+Example: [0, 3, 7]
+If NONE match, return: []

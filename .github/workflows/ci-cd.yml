@@ -1,0 +1,115 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository_owner }}/job-automation
+
+jobs:
+  build-and-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service:
+          - { name: xing, context: XING }
+          - { name: join, context: join }
+          - { name: latex-compiler, context: latex-self-hosted }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "tag=staging" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.context }}
+          push: false
+          load: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-${{ matrix.service.name }}:${{ steps.tag.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-${{ matrix.service.name }}:${{ github.sha }}
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-${{ matrix.service.name }}:${{ github.sha }}
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
+      - name: Push image
+        if: github.event_name != 'pull_request'
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-${{ matrix.service.name }}:${{ steps.tag.outputs.tag }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-${{ matrix.service.name }}:${{ github.sha }}
+
+  deploy-staging:
+    needs: build-and-scan
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > "$HOME/.kube/config"
+      - name: Deploy
+        run: |
+          helm upgrade --install job-automation ./deploy/helm/job-automation \
+            -f deploy/helm/job-automation/values.yaml \
+            -f deploy/helm/job-automation/values-staging.yaml \
+            --set imageRegistry=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }} \
+            --set imageTag=staging \
+            -n job-automation-staging --create-namespace --wait --timeout 5m
+
+  deploy-prod:
+    needs: build-and-scan
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    environment: production # requires manual approval — configure this Environment's protection rules in repo settings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > "$HOME/.kube/config"
+      - name: Deploy
+        run: |
+          helm upgrade --install job-automation ./deploy/helm/job-automation \
+            -f deploy/helm/job-automation/values.yaml \
+            -f deploy/helm/job-automation/values-prod.yaml \
+            --set imageRegistry=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }} \
+            --set imageTag=${{ github.ref_name }} \
+            -n job-automation-prod --create-namespace --wait --timeout 5m

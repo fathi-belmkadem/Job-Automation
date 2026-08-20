@@ -1,0 +1,15 @@
+{{- if .Values.join.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: join-workspace
+  labels: {{ include "job-automation.labels" (dict "name" "join" "Release" .Release) | nindent 4 }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- if .Values.join.pvc.storageClassName }}
+  storageClassName: {{ .Values.join.pvc.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.join.pvc.size }}
+{{- end }}

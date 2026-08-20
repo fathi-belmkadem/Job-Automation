@@ -1,0 +1,43 @@
+# Secrets — never commit
+**/.env
+**/.env.*
+!**/.env.example
+**/session.json
+**/personal_info.txt
+client_secret_*.json
+**/client_secret_*.json
+
+# Personal / generated data
+**/output/
+**/debug/
+**/scratch/
+**/My_Applications/
+*.xlsx
+!**/German-Contacts.xlsx.example
+~$*.xlsx
+**/Optional_files/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+*.log
+
+# Node / misc tooling that might show up under deploy/
+node_modules/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local Kubernetes / Helm scratch
+deploy/helm/**/charts/
+*.tgz
+
+# Large scraped/debug artifacts
+*.csv
+!**/*.example.csv

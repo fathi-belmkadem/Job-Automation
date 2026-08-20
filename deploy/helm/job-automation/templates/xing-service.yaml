@@ -1,0 +1,13 @@
+{{- if .Values.xing.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: xing-dashboard
+  labels: {{ include "job-automation.labels" (dict "name" "xing" "Release" .Release) | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: xing
+  ports:
+    - port: 5000
+      targetPort: 5000
+{{- end }}

@@ -1,0 +1,28 @@
+ACT AS THE CANDIDATE. Based on my CV, Personal Info, and the Job Description, fill out these application form fields.
+
+PERSONAL INFO / CONTEXT:
+{personal_info}
+
+MY CV: 
+{cv_content}
+
+JOB DESCRIPTION: 
+{job_desc}
+
+FIELDS TO FILL:
+{fields_json}
+
+OUTPUT:
+You MUST return a valid JSON array of objects. Do NOT wrap in markdown ticks.
+Each object must have:
+- "target_id": string (exactly as provided in the FIELDS TO FILL)
+- "action": string ("fill", "select", or "check")
+- "value": string (the text to type, or the exact option value to select. Leave empty for "check")
+
+Rules:
+- Keep text answers very concise (1-2 sentences).
+- For numbers (salary), provide a reasonable integer (e.g., 60000).
+- For dates (availability), use YYYY-MM-DD.
+- ALWAYS consent to data privacy / terms (return action "check").
+- For radios (e.g. Yes/No), choose the correct one by returning "action": "check" for that specific target_id.
+- Only return actions for fields you are confident answering.

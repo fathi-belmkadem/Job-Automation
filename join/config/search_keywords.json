@@ -1,0 +1,112 @@
+{
+    "de": {
+        "name": "Germany",
+        "keywords": [
+            "Cybersecurity Engineer",
+            "Cyber Security",
+            "Information Security",
+            "IT Security",
+            "Network Security",
+            "Blue Team",
+            "SOC Analyst",
+            "Security Analyst",
+            "Penetration Tester",
+            "Ethical Hacker",
+            "Vulnerability Management",
+            "DevSecOps",
+            "Cloud Security",
+            "Security Engineer",
+            "System Administrator",
+            "Linux Administrator",
+            "Cloud Administrator",
+            "SIEM Engineer",
+            "SOAR Engineer",
+            "Incident Response"
+        ],
+        "gl": "de",
+        "pages": 10
+    },
+    "at": {
+        "name": "Austria",
+        "keywords": [
+            "Cybersecurity Engineer",
+            "IT Security",
+            "Network Security",
+            "System Administrator",
+            "Linux Administrator",
+            "Cloud Security",
+            "Security Analyst",
+            "SOC Analyst"
+        ],
+        "gl": "at",
+        "pages": 10
+    },
+    "ch": {
+        "name": "Switzerland",
+        "keywords": [
+            "Cybersecurity Engineer",
+            "Ingénieur Sécurité",
+            "Information Security",
+            "Network Security",
+            "System Administrator",
+            "DevSecOps",
+            "Security Analyst",
+            "SOC Analyst"
+        ],
+        "gl": "ch",
+        "pages": 10
+    },
+    "nl": {
+        "name": "Netherlands",
+        "keywords": [
+            "Cybersecurity Engineer",
+            "Security Analyst",
+            "DevSecOps",
+            "Cloud Security",
+            "System Administrator",
+            "Network Security"
+        ],
+        "gl": "nl",
+        "pages": 10
+    },
+    "be": {
+        "name": "Belgium",
+        "keywords": [
+            "Cybersecurity Engineer",
+            "Ingénieur Sécurité",
+            "IT Security",
+            "System Administrator",
+            "Network Security",
+            "DevSecOps"
+        ],
+        "gl": "be",
+        "pages": 10
+    },
+    "lu": {
+        "name": "Luxembourg",
+        "keywords": [
+            "Cybersecurity Engineer",
+            "IT Security",
+            "Security Analyst",
+            "System Administrator",
+            "Network Security"
+        ],
+        "gl": "lu",
+        "pages": 10
+    },
+    "fr": {
+        "name": "France",
+        "keywords": [
+            "Ingénieur Cybersécurité",
+            "Consultant Cybersécurité",
+            "Pentester",
+            "Administrateur Système",
+            "Ingénieur Sécurité",
+            "DevSecOps",
+            "Analyste SOC",
+            "Architecte Sécurité"
+        ],
+        "gl": "fr",
+        "pages": 10
+    }
+}

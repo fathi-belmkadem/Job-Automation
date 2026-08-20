@@ -1,0 +1,25 @@
+# helm upgrade --install job-automation ./deploy/helm/job-automation \
+#   -f values.yaml -f values-prod.yaml -n job-automation-prod --create-namespace
+
+imageTag: latest
+
+ingress:
+  enabled: true
+  tls:
+    enabled: true
+    secretName: job-automation-prod-tls
+
+xing:
+  ingress:
+    host: xing.CHANGEME.example.com
+  cronjob:
+    enabled: true
+
+join:
+  ingress:
+    host: join.CHANGEME.example.com
+  cronjob:
+    enabled: true
+
+latexCompiler:
+  replicas: 2

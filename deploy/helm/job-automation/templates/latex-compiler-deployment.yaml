@@ -1,0 +1,41 @@
+{{- if .Values.latexCompiler.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: latex-compiler
+  labels: {{ include "job-automation.labels" (dict "name" "latex-compiler" "Release" .Release) | nindent 4 }}
+spec:
+  replicas: {{ .Values.latexCompiler.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: latex-compiler
+  template:
+    metadata:
+      labels: {{ include "job-automation.labels" (dict "name" "latex-compiler" "Release" .Release) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: latex-compiler
+          image: {{ include "job-automation.image" (dict "root" $ "repository" .Values.latexCompiler.image.repository) }}
+          ports:
+            - containerPort: 5000
+          resources: {{ toYaml .Values.latexCompiler.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          livenessProbe:
+            httpGet: { path: /healthz, port: 5000 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            httpGet: { path: /healthz, port: 5000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+{{- end }}

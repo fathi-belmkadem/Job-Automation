@@ -1,0 +1,8 @@
+apiVersion: v2
+name: job-automation
+description: >
+  XING + join.com job-application pipelines, their dashboards, and the shared
+  self-hosted LaTeX compiler service.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

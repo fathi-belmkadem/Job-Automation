@@ -1,0 +1,18 @@
+ACT AS A STRICT TECHNICAL RECRUITER. Evaluate if these jobs are a good match for a candidate with:
+- Expertise in Cybersecurity, AI/ML, and Full-Stack Development (Python/Next.js/Docker/K8s).
+- Target Seniority: Working Student, Intern, Junior, Entry-Level.
+
+REJECT RULES:
+1. NO Senior, Lead, Principal, Manager, Director (unless Junior Manager/Trainee).
+2. NO Non-technical roles (pure Sales, HR, Marketing).
+3. NO Unrelated engineering (Mechanical, Civil).
+4. NO Visa Sponsorship needed (Candidate is in Germany with Work Permit).
+
+INPUT:
+{jobs_text}
+
+OUTPUT:
+Return a JSON array of objects. Each object:
+- "index": int
+- "decision": "keep" or "reject"
+- "reason": string (brief)

@@ -1,0 +1,686 @@
+{
+  "name": "Company Discovery +",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bc4b04ff-e662-4c1d-8b87-12c6e7c78061",
+              "name": "target_role",
+              "value": "Head of People, VP People, Talent Acquisition Manager, HR Manager, Recruiter, People Operations,  Personalleiter, Leiter Personal, HR Business Partner, Referent Personalmarketing, Talent Acquisition Manager, CTO, VP Engineering, Director of Engineering, Head of Development, Engineering Manager, Technischer Leiter, Leiter Entwicklung, IT-Leiter, Founder, Co-Founder, CEO, Managing Director, Geschäftsführer, Gründer, Inhaber.\n",
+              "type": "string"
+            },
+            {
+              "id": "b5811e51-8f70-4e0a-b9e3-b6a9061806d7",
+              "name": "company_size",
+              "value": "Scale-up, Series A, GmbH, GmbH & Co., Big companies , corps, \n",
+              "type": "string"
+            },
+            {
+              "id": "f5cb8a64-88e3-4681-ba6e-eef3addf7112",
+              "name": "industry",
+              "value": "All possible companies with IT department",
+              "type": "string"
+            },
+            {
+              "id": "c548dbab-3f99-41e3-9537-675bf2d7520a",
+              "name": "location",
+              "value": "Germany OR Berlin OR Munich OR Rengensburg OR Nuremberg OR passau OR Bavaria",
+              "type": "string"
+            },
+            {
+              "id": "ea1093ac-6cbb-46c1-8c31-1c095eaf19b7",
+              "name": "results_limit",
+              "value": "50",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "051ee716-76ad-44f4-9015-10ed40411550",
+      "name": "Set Search Parameters",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        336,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "id": "3d69cb5e-6872-4147-8a35-7d818048fd95",
+      "name": "Wait (API Warmup)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        544,
+        192
+      ],
+      "webhookId": "1966da29-314a-43dc-b52d-5dd6634645ea"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse and validate Perplexity response\nconst rawResponse = $('Message a model').first().json.content.parts[0].text;\n\n// Extract JSON from response (handles markdown wrapping)\nlet jsonText = '';\n\nif (rawResponse.choices && rawResponse.choices[0] && rawResponse.choices[0].message) {\n  jsonText = rawResponse.choices[0].message.content;\n} else if (typeof rawResponse === 'string') {\n  jsonText = rawResponse;\n} else {\n  jsonText = JSON.stringify(rawResponse);\n}\n\n// Remove markdown code blocks if present\njsonText = jsonText.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n\n// Try to extract array if wrapped in text\nconst arrayMatch = jsonText.match(/\\[[\\s\\S]*\\]/);\nif (arrayMatch) {\n  jsonText = arrayMatch[0];\n}\n\nlet companies = [];\ntry {\n  companies = JSON.parse(jsonText);\n} catch (e) {\n  console.error('Failed to parse JSON:', e);\n  console.error('Raw text:', jsonText);\n  return [];\n}\n\n// Validate and clean data\nconst validCompanies = companies\n  .filter(company => {\n    // Must have required fields\n    if (!company.email || !company.company) return false;\n    \n    // Email validation\n    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n    if (!emailRegex.test(company.email)) return false;\n    \n    // Avoid generic emails\n    const genericEmails = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];\n    const domain = company.email.split('@')[1];\n    if (genericEmails.includes(domain)) return false;\n    \n    return true;\n  })\n  .map(company => ({\n    company: company.company.trim(),\n    email: company.email.toLowerCase().trim(),\n    contact_name: company.contact_name || 'Hiring Team',\n    website: company.website || '',\n    source: company.source || 'Perplexity',\n    validated: true\n  }));\n\nif (validCompanies.length === 0) {\n  throw new Error('No valid companies found after validation');\n}\n\nconsole.log(`Validated ${validCompanies.length} companies`);\n\nreturn validCompanies.map(company => ({ json: company }));"
+      },
+      "id": "8ddadc3e-fc55-4a54-aafb-1fcb7126b557",
+      "name": "Parse & Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "id": "81c1ba10-3bbf-4fef-9c75-978ebd2368de",
+      "name": "Wait (Rate Limit Protection)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        192
+      ],
+      "webhookId": "ba4c3ded-1668-4fad-8983-e0877c6cc813"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ",
+          "mode": "list",
+          "cachedResultName": "test-sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1571603770,
+          "mode": "list",
+          "cachedResultName": "Feuille 7",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit#gid=1571603770"
+        },
+        "options": {}
+      },
+      "id": "898dfca4-f7fc-4484-a5a2-a1f776cbc737",
+      "name": "Google Sheets - Check Existing",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        1232,
+        192
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "VOabBvYD0hWtdg1G",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get existing emails from sheet with error handling\nlet existingEmails = new Set();\n\ntry {\n  const existingData = $('Google Sheets - Check Existing').all();\n  \n  existingData.forEach(item => {\n    // Handle different response formats\n    const email = item.json.Email || item.json[0] || item.json.value;\n    if (email && typeof email === 'string' && email.includes('@')) {\n      existingEmails.add(email.toLowerCase().trim());\n    }\n  });\n  \n  console.log(`Found ${existingEmails.size} existing emails in sheet`);\n} catch (error) {\n  console.log('Warning: Could not read existing emails from sheet');\n  console.log('Continuing without deduplication check');\n  console.log('Error:', error.message);\n  // Continue without deduplication if sheet read fails\n}\n\n// Get new companies from previous node\nconst newCompanies = $('Parse & Validate').all();\n\nif (existingEmails.size === 0) {\n  // No existing data or read failed - return all companies\n  console.log('No existing data found - processing all companies');\n  return newCompanies;\n}\n\n// Filter out duplicates\nconst uniqueCompanies = newCompanies.filter(item => {\n  const email = item.json.email.toLowerCase().trim();\n  return !existingEmails.has(email);\n});\n\nif (uniqueCompanies.length === 0) {\n  console.log('No new companies found - all are duplicates');\n  return [];\n}\n\nconsole.log(`Found ${uniqueCompanies.length} unique companies out of ${newCompanies.length} total`);\n\nreturn uniqueCompanies;"
+      },
+      "id": "b1a873fa-555e-4942-a5e3-89bfa891fcb0",
+      "name": "Deduplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "5461542c-7667-43fb-a946-00a12cefa606",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1968,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format data for Google Sheets\nconst company = $('Loop Over Items').first().json;\nconst description = $input.first().json.content.parts[0].text;\n\n\n// Format for Google Sheets\nreturn [{\n  json: {\n    Email: company.email,\n    Company: company.company,\n    'Full Name': company.contact_name,\n    Company_description: description,\n    Website: company.website,\n    Source: company.source || 'Perplexity',\n    Date_Added: new Date().toISOString().split('T')[0]\n  }\n}];"
+      },
+      "id": "432e87ce-2fa0-43b7-beec-eee1b6db3590",
+      "name": "Final Row Formatter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "id": "513886a1-525d-40a6-ae95-bac4f5fbb866",
+      "name": "Wait (Rate Limiting)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3344,
+        160
+      ],
+      "webhookId": "aa21c65d-015d-4559-9030-5b021b8391ff"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ",
+          "mode": "list",
+          "cachedResultName": "test-sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1571603770,
+          "mode": "list",
+          "cachedResultName": "Feuille 7",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit#gid=1571603770"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $json.Email }}",
+            "Company": "={{ $json.Company }}",
+            "Full Name": "={{ $json['Full Name'] }}",
+            "Company_description": "={{ $json.Company_description }}",
+            "Website": "={{ $json.Website }}",
+            "Source": "={{ $json.Source }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company_description",
+              "displayName": "Company_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Website",
+              "displayName": "Website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Output",
+              "displayName": "Output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "65ac2553-21b1-4f87-8ce1-b022a21cc00a",
+      "name": "Google Sheets - Append Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        3600,
+        432
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "VOabBvYD0hWtdg1G",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "a62e307f-7407-4325-97ed-10e3ad0f4a89",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "03da12de-0ce9-4ddb-9ca7-bc0b388e53b6",
+      "name": "Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2256,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3-pro-preview",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3-pro-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a B2B research specialist with strong knowledge of the German business ecosystem and professional contact discovery.\n\nYour task is to identify real, currently active companies AND extract verified, human professional email addresses belonging to identifiable employees.\n\nCRITICAL RULES (MANDATORY):\n- ONLY return PERSONAL, HUMAN email addresses belonging to real employees\n- The email must clearly match a named individual (e.g. firstname.lastname@company.de or firstinitial.lastname@company.de)\n- Role-based, generic, or shared inboxes are STRICTLY FORBIDDEN\n\nFORBIDDEN EMAIL TYPES (DO NOT USE):\n- info@, contact@, hello@, office@, support@\n- hr@, careers@, jobs@, talent@\n- recruiting@, hiring@\n- noreply@\n\nIDENTITY REQUIREMENTS:\n- Each email MUST be linked to a real, named person\n- The person must hold a relevant role (HR, People, Engineering Lead, CTO, Founder, Hiring Manager)\n- The person must be verifiable via at least one public source\n\nVERIFICATION RULES:\n- Email must belong to the company’s official domain\n- Company must have an active, accessible website\n- Person must be verifiable via:\n  - LinkedIn profile\n  - Company “Team”, “About”, or “Impressum” page\n  - Public business registry (e.g. Handelsregister)\n- If NO human email can be verified → EXCLUDE THE COMPANY\n\nRESEARCH PROCESS:\n- Check official company websites (Impressum is mandatory in Germany)\n- Check LinkedIn company pages and employee profiles\n- Use pattern confirmation only if the exact email is publicly listed or explicitly shown\n- DO NOT GUESS OR GENERATE EMAILS\n\nOUTPUT RULES:\n- Return ONLY valid JSON\n- No explanations, no comments, no markdown",
+              "role": "model"
+            },
+            {
+              "content": "=Please research and find  {{ $('Set Search Parameters').item.json.results_limit }} verified companies that match the following criteria:\n\nLocation: {{ $('Set Search Parameters').item.json.location }}\nIndustry: {{ $('Set Search Parameters').item.json.industry }}\nCompany size: {{ $('Set Search Parameters').item.json.company_size }}\nTarget contacts: {{ $('Set Search Parameters').item.json.target_role }}\n\nSTRICT REQUIREMENTS:\n- ONLY include companies where a HUMAN, IDENTIFIABLE employee email can be verified\n- Shared, role-based, or generic inboxes are NOT allowed\n- If only info@, hr@, jobs@, or similar emails exist → EXCLUDE the company\n\nFor each company, provide:\n1. Official company name\n2. A verified HUMAN professional email address (e.g. firstname.lastname@company.de)\n3. Full name of the person who owns the email\n4. The person’s job title\n5. The official company website URL\n6. The exact source where the email was found (LinkedIn, Website, Impressum)\n\nVerification rules:\n- The email must be explicitly listed or clearly shown in a public source\n- The person must be currently associated with the company\n- Do not infer, guess, or fabricate emails\n\nReturn the result strictly in the following JSON format only:\n\n[\n  {\n    \"company\": \"Company Name GmbH\",\n    \"email\": \"firstname.lastname@company.de\",\n    \"contact_name\": \"Full Name\",\n    \"job_title\": \"Job Title\",\n    \"website\": \"https://company.de\",\n    \"source\": \"LinkedIn / Website / Impressum\"\n  }\n]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        736,
+        192
+      ],
+      "id": "9e4f255a-2b6b-431e-830b-6d5e58e41fa5",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "W9p1Y8n5MdmaLKTN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2512,
+        368
+      ],
+      "id": "03ee5306-bffe-49e9-969c-1b7f75ce018f",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a senior B2B research analyst and strategy writer.\n\nYour task is to write concise, executive-level company descriptions suitable for professional outreach, hiring conversations, or partnership discussions.\n\nWRITING GUIDELINES:\n- Write exactly 2–3 well-structured sentences\n- Use a professional, strategic, and neutral tone\n- Emphasize the company’s mission, core focus, and long-term direction\n- Clearly mention the main technology, solution area, or expertise\n- Describe the value the company enables for its target market\n- Avoid exaggerated marketing language or superlatives\n- Do not speculate beyond what can be reasonably inferred\n\nSTYLE REQUIREMENTS:\n- Slightly strategic and purpose-driven (C-level audience)\n- Confident, factual, and polished\n- No buzzword stacking\n- No bullet points\n- Plain text only (no formatting, no markdown)\n",
+              "role": "model"
+            },
+            {
+              "content": "=Generate a professional company description for executive-level outreach.\n\nCompany name: {{ $json.company }}\nWebsite: {{ $json.website }}\nLocation: Germany\nIndustry context: {{ $node['Set Search Parameters'].json['industry'] }}\n\nWrite a 2–3 sentence description that:\n- Explains what the company primarily does and why it exists\n- Highlights its core technology, products, or expertise\n- Clarifies the type of industries, customers, or market it serves\n\nThe description should sound suitable for a hiring manager or decision-maker, be factual and strategic, and reflect the company’s overall direction and purpose.\n\nReturn only the description text.\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        2752,
+        160
+      ],
+      "id": "cde32981-d2a3-43b3-8e89-f880e00dd741",
+      "name": "Message a model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "W9p1Y8n5MdmaLKTN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "id": "25bdbfe1-06ca-4cc6-bf03-7e77fd9d7c1b",
+      "name": "Wait (API Warmup)1",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2544,
+        160
+      ],
+      "webhookId": "1966da29-314a-43dc-b52d-5dd6634645ea"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */2 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        16,
+        192
+      ],
+      "id": "fec2eb37-5d73-40c8-b250-2a56e87cf2bf",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        16,
+        0
+      ],
+      "id": "279f65f4-f403-44d1-94a5-54ca29c73461",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Set Search Parameters": {
+      "main": [
+        [
+          {
+            "node": "Wait (API Warmup)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate": {
+      "main": [
+        [
+          {
+            "node": "Deduplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Check Existing": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplicate": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Row Formatter": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limiting)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limiting)": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Append Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Append Row": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Wait (Rate Limit Protection)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Success": {
+      "main": [
+        [
+          {
+            "node": "Wait (API Warmup)1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation, do nothing": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (API Warmup)": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit Protection)": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Check Existing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (API Warmup)1": {
+      "main": [
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Final Row Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Search Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Search Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "a06fd88e-3987-4f39-b3ee-67c6d6a0c422",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f8b44277956e9af80948076637440968a19894bca2dfbdaa4283e0361f55a895"
+  },
+  "id": "B7bg9qpNI5oBQBvvNtMOA",
+  "tags": []
+}

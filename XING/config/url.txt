@@ -1,0 +1,8 @@
+# Base XING job search URL template.
+# Use Python's f-string formatting or urllib.parse.quote_plus to insert keywords and location.
+# Placeholders:
+#   {keywords} – URL‑encoded search term (e.g., "Data Scientist")
+#   {location} – URL‑encoded location (e.g., "France")
+# Example usage in code:
+#   url = f"https://www.xing.com/jobs/search?keywords={keywords}&location={location}"
+https://www.xing.com/jobs/search?keywords={keywords}&location={location}

@@ -1,0 +1,15 @@
+{{- if .Values.latexCompiler.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: latex-compiler
+  labels: {{ include "job-automation.labels" (dict "name" "latex-compiler" "Release" .Release) | nindent 4 }}
+spec:
+  # ClusterIP only — this must never be reachable from outside the cluster.
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: latex-compiler
+  ports:
+    - port: 5000
+      targetPort: 5000
+{{- end }}

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join.com AI Agent | Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --sidebar-bg: #111827;
+            --card-bg: rgba(30, 41, 59, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-cyan: #00f2fe;
+            --accent-purple: #4facfe;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-orange: #f59e0b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); display: flex; min-height: 100vh; overflow-x: hidden; background-image: radial-gradient(circle at 15% 50%, rgba(0, 242, 254, 0.04), transparent 25%), radial-gradient(circle at 85% 30%, rgba(79, 172, 254, 0.04), transparent 25%); }
+
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); border-right: 1px solid var(--card-border); display: flex; flex-direction: column; padding: 2rem 1.5rem; z-index: 10; }
+        .brand { font-size: 1.5rem; font-weight: 800; margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; background: linear-gradient(to right, var(--accent-cyan), var(--accent-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .brand i { color: var(--accent-cyan); -webkit-text-fill-color: initial; }
+        .nav-items { display: flex; flex-direction: column; gap: 0.5rem; }
+        .nav-item { padding: 1rem 1.2rem; border-radius: 0.8rem; color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 1rem; font-weight: 500; transition: all 0.3s ease; cursor: pointer; }
+        .nav-item:hover, .nav-item.active { background: rgba(255, 255, 255, 0.05); color: var(--text-main); }
+        .nav-item.active { background: linear-gradient(90deg, rgba(0, 242, 254, 0.1), transparent); border-left: 3px solid var(--accent-cyan); }
+
+        .status-indicator { margin-top: auto; padding: 1rem; border-radius: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); display: flex; align-items: center; gap: 0.8rem; }
+        .pulse { width: 10px; height: 10px; background: var(--accent-green); border-radius: 50%; box-shadow: 0 0 10px var(--accent-green); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+        .pulse.running { background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan); animation: pulse-cyan 2s infinite; }
+        @keyframes pulse-cyan { 0% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 242, 254, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); } }
+
+        .main-content { flex: 1; padding: 2.5rem 3rem; overflow-y: auto; position: relative; }
+        .page { display: none; animation: fadeIn 0.4s ease forwards; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; }
+        .header h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px; }
+        .refresh-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border); color: var(--text-main); padding: 0.6rem 1.2rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; font-family: 'Outfit'; font-weight: 500; }
+        .refresh-btn:hover { background: rgba(255, 255, 255, 0.1); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid var(--card-border); padding: 1.8rem; border-radius: 1.2rem; display: flex; flex-direction: column; gap: 0.5rem; transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); border-color: rgba(255, 255, 255, 0.2); }
+        .stat-value { font-size: 2.5rem; font-weight: 700; background: linear-gradient(45deg, var(--accent-cyan), var(--accent-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-label { color: var(--text-muted); font-size: 0.95rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+
+        .chart-container { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1.2rem; padding: 1.5rem; margin-bottom: 2rem; height: 300px; }
+
+        .table-container { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1.2rem; overflow: hidden; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: rgba(0, 0, 0, 0.2); padding: 1.2rem 1.5rem; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--card-border); }
+        td { padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.03); font-size: 0.95rem; }
+        tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+        .cell-title { max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; font-weight: 500; }
+        .cell-status { color: var(--text-muted); font-size: 0.85rem; }
+        .btn-link { color: var(--accent-cyan); text-decoration: none; font-weight: 500; font-size: 0.9rem; }
+        .badge { display: inline-block; padding: 0.3rem 0.8rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+        .badge.applied { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge.failed { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge.pending { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge.kept { background: rgba(0, 242, 254, 0.15); color: var(--accent-cyan); border: 1px solid rgba(0, 242, 254, 0.3); }
+
+        .terminal-container { background: #0f111a; border: 1px solid #2a2f4c; border-radius: 0.8rem; height: 70vh; padding: 1rem; font-family: 'Fira Code', monospace; font-size: 0.9rem; color: #a6accd; overflow-y: auto; white-space: pre-wrap; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
+        
+        .settings-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1.2rem; padding: 2rem; margin-bottom: 2rem; }
+        .settings-input { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border); color: #fff; padding: 1rem; border-radius: 0.5rem; font-family: 'Fira Code', monospace; font-size: 0.9rem; resize: vertical; min-height: 150px; margin-bottom: 1rem; }
+
+        .actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+        .action-card { background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9)); border: 1px solid var(--card-border); padding: 2rem; border-radius: 1.2rem; text-align: center; display: flex; flex-direction: column; gap: 1rem; align-items: center; position: relative; overflow: hidden; }
+        .btn-run { background: linear-gradient(90deg, #00f2fe, #4facfe); border: none; padding: 0.8rem 2rem; color: #fff; font-family: 'Outfit'; font-weight: 600; font-size: 1rem; border-radius: 2rem; cursor: pointer; transition: transform 0.2s; width: 100%; }
+        .btn-run:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4); }
+
+        .toast { position: fixed; bottom: 2rem; right: 2rem; background: rgba(16, 185, 129, 0.9); color: white; padding: 1rem 2rem; border-radius: 0.8rem; font-weight: 500; transform: translateY(150%); transition: transform 0.3s; z-index: 100; }
+        .toast.show { transform: translateY(0); }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand"><i class="fa-solid fa-robot"></i> Join Agent</div>
+        <nav class="nav-items">
+            <div class="nav-item active" onclick="switchPage('overview')"><i class="fa-solid fa-chart-pie"></i> Overview</div>
+            <div class="nav-item" onclick="switchPage('database')"><i class="fa-solid fa-database"></i> Job List</div>
+            <div class="nav-item" onclick="switchPage('terminal')"><i class="fa-solid fa-terminal"></i> Live Logs</div>
+            <div class="nav-item" onclick="switchPage('settings')"><i class="fa-solid fa-sliders"></i> Configuration</div>
+            <div class="nav-item" onclick="switchPage('actions')"><i class="fa-solid fa-bolt"></i> Control Panel</div>
+        </nav>
+        <div class="status-indicator">
+            <div class="pulse" id="sys-pulse"></div>
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">System Status</div>
+                <div style="font-weight: 600; font-size: 0.95rem;" id="sys-status-text">Idle</div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div id="page-overview" class="page active">
+            <div class="header"><h1>Analytics Dashboard</h1><button class="refresh-btn" onclick="loadData()">Refresh</button></div>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value" id="val-total">0</div><div class="stat-label">Total Found</div></div>
+                <div class="stat-card"><div class="stat-value" id="val-applied" style="color:var(--accent-green)">0</div><div class="stat-label">Applications Sent</div></div>
+                <div class="stat-card"><div class="stat-value" id="val-kept" style="color:var(--accent-cyan)">0</div><div class="stat-label">Kept (Deep)</div></div>
+                <div class="stat-card"><div class="stat-value" id="val-rejected" style="color:var(--accent-red)">0</div><div class="stat-label">Rejected</div></div>
+            </div>
+            <div class="chart-container"><canvas id="statusChart"></canvas></div>
+        </div>
+
+        <div id="page-database" class="page">
+            <div class="header"><h1>Job Database</h1><button class="refresh-btn" onclick="loadData()">Refresh</button></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Job Title</th><th>Filter Status</th><th>App Status</th><th>Docs</th><th>Post</th></tr></thead>
+                    <tbody id="db-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="page-terminal" class="page">
+            <div class="header"><h1>Live Pipeline Logs</h1><button class="refresh-btn" onclick="fetchLogs()">Refresh</button></div>
+            <div class="terminal-container" id="terminal-output">Loading...</div>
+        </div>
+
+        <div id="page-settings" class="page">
+            <div class="header"><h1>Configuration</h1><button class="btn-run" style="width:auto" onclick="saveSettings()">Save All</button></div>
+            <div class="settings-card"><h3>Personal Info</h3><textarea id="settings-personal" class="settings-input"></textarea></div>
+            <div class="settings-card"><h3>Smart Questions Prompt</h3><textarea id="settings-prompt" class="settings-input"></textarea></div>
+        </div>
+
+        <div id="page-actions" class="page">
+            <div class="header"><h1>Control Panel</h1></div>
+            <div class="actions-grid">
+                <div class="action-card"><h3>1. Fetch URLs</h3><button class="btn-run" onclick="triggerAction('fetch')">Run Fetcher</button></div>
+                <div class="action-card"><h3>2. Filter Pass 1</h3><button class="btn-run" onclick="triggerAction('filter')">Run Filter</button></div>
+                <div class="action-card"><h3>3. Enrich Jobs</h3><button class="btn-run" onclick="triggerAction('enrich')">Run Enrichment</button></div>
+                <div class="action-card"><h3>4. Deep Filter</h3><button class="btn-run" onclick="triggerAction('filter_deep')">Run Deep Filter</button></div>
+                <div class="action-card"><h3>5. Auto-Apply</h3><button class="btn-run" onclick="triggerAction('apply')">Run Applier</button></div>
+                <div class="action-card" style="border-color:var(--accent-purple)"><h3>Full Pipeline</h3><button class="btn-run" onclick="triggerAction('all')" style="background:linear-gradient(90deg, #4facfe, #00f2fe)">Execute All</button></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="toast" class="toast">Action started!</div>
+
+    <script>
+        let globalJobs = [];
+        let chartInstance = null;
+        let logsInterval = null;
+
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            
+            // Find the nav item that matches this pageId
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                if (item.getAttribute('onclick').includes(`'${pageId}'`)) {
+                    item.classList.add('active');
+                }
+            });
+
+            if(pageId === 'database' || pageId === 'overview') loadData();
+            if(pageId === 'settings') fetchSettings();
+            if(pageId === 'terminal') { fetchLogs(); if(!logsInterval) logsInterval = setInterval(fetchLogs, 2000); }
+            else { clearInterval(logsInterval); logsInterval = null; }
+        }
+
+        async function loadData() {
+            try {
+                console.log("Fetching jobs...");
+                const res = await fetch('/api/jobs');
+                if (!res.ok) throw new Error("API failed");
+                globalJobs = await res.json();
+                if (globalJobs.error) {
+                    showToast("Error: " + globalJobs.error);
+                    return;
+                }
+                renderData();
+                checkStatus();
+            } catch (err) {
+                console.error("LoadData Error:", err);
+                showToast("Failed to load jobs");
+            }
+        }
+
+        function renderData() {
+            let applied = 0, kept = 0, rejected = 0, pending = 0;
+            globalJobs.forEach(j => {
+                const fs = String(j['Filter Status']).toLowerCase();
+                const as = String(j['Application Status']).toLowerCase();
+                if (as === 'applied') applied++;
+                if (fs.includes('kept')) kept++;
+                if (fs.includes('reject')) rejected++;
+                else pending++;
+            });
+
+            document.getElementById('val-total').innerText = globalJobs.length;
+            document.getElementById('val-applied').innerText = applied;
+            document.getElementById('val-kept').innerText = kept;
+            document.getElementById('val-rejected').innerText = rejected;
+
+            updateChart(applied, kept, rejected, pending);
+
+            const tbody = document.getElementById('db-table-body');
+            let html = '';
+            [...globalJobs].reverse().forEach(job => {
+                const fs_cls = String(job['Filter Status'] || '').toLowerCase().includes('kept') ? 'kept' : 'pending';
+                const as_cls = String(job['Application Status'] || '').toLowerCase() === 'applied' ? 'applied' : 'pending';
+                
+                html += `
+                    <tr>
+                        <td class="cell-title">${job.Title || 'Unknown'}</td>
+                        <td><span class="badge ${fs_cls}">${job['Filter Status'] || 'Pending'}</span></td>
+                        <td><span class="badge ${as_cls}">${job['Application Status'] || 'Not Started'}</span></td>
+                        <td>
+                            <a href="/api/pdf/${job._index}/cv" target="_blank" class="btn-link">CV</a> | 
+                            <a href="/api/pdf/${job._index}/cl" target="_blank" class="btn-link">CL</a>
+                        </td>
+                        <td><a href="${job.URL}" target="_blank" class="btn-link"><i class="fa-solid fa-external-link"></i></a></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function updateChart(applied, kept, rejected, pending) {
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Applied', 'Kept', 'Rejected', 'Pending'],
+                    datasets: [{
+                        data: [applied, kept, rejected, pending],
+                        backgroundColor: ['#10b981', '#00f2fe', '#ef4444', '#94a3b8'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
+            });
+        }
+
+        async function triggerAction(action) {
+            const res = await fetch('/api/action/' + action, { method: 'POST' });
+            const data = await res.json();
+            showToast(data.message);
+            if(res.ok) switchPage('terminal');
+        }
+
+        async function checkStatus() {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+            const pulse = document.getElementById('sys-pulse');
+            const text = document.getElementById('sys-status-text');
+            if (data.is_running) { pulse.classList.add('running'); text.innerText = 'Running...'; }
+            else { pulse.classList.remove('running'); text.innerText = 'Idle'; }
+        }
+
+        async function fetchLogs() {
+            const res = await fetch('/api/logs');
+            const data = await res.json();
+            document.getElementById('terminal-output').innerText = data.logs || "No logs.";
+        }
+
+        async function fetchSettings() {
+            const res = await fetch('/api/settings');
+            const data = await res.json();
+            document.getElementById('settings-personal').value = data.personal_info;
+            document.getElementById('settings-prompt').value = data.prompt;
+        }
+
+        async function saveSettings() {
+            const payload = {
+                personal_info: document.getElementById('settings-personal').value,
+                prompt: document.getElementById('settings-prompt').value
+            };
+            await fetch('/api/settings', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            showToast("Settings Saved!");
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        loadData();
+        setInterval(checkStatus, 5000);
+    </script>
+</body>
+</html>

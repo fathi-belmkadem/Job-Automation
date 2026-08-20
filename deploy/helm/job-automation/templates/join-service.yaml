@@ -1,0 +1,13 @@
+{{- if .Values.join.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: join-dashboard
+  labels: {{ include "job-automation.labels" (dict "name" "join" "Release" .Release) | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: join
+  ports:
+    - port: 5000
+      targetPort: 5000
+{{- end }}

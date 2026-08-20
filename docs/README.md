@@ -1,0 +1,68 @@
+# Job-Automation — Documentation Index
+
+This project is a personal job-search automation system with two halves:
+
+1. **Job application pipelines** — scrape job boards, filter with AI, tailor a CV + cover letter per job, compile them to PDF, and auto-submit applications through the site's own apply flow.
+2. **Cold-outreach pipelines** — discover companies/contacts, send personalized "Initiativbewerbung" (spontaneous application) emails, and keep the contact list clean by pruning bounces.
+
+A shared LaTeX-compilation microservice and a webhook-triggered on-demand variant tie the pieces together.
+
+## Modules
+
+| Module | What it does | Docs |
+|---|---|---|
+| `XING/` | Full pipeline (harvest → filter → enrich → classify → apply) for job postings on XING.com, plus a Flask dashboard | [xing.md](xing.md) |
+| `join/` | Same pipeline concept, retargeted at join.com; jobs are discovered via search-engine queries instead of site search, and it supports multiple AI providers | [join.md](join.md) |
+| `latex-self-hosted/` | Self-hosted Flask microservice that compiles LaTeX → PDF (used by both the Python pipelines locally and by the n8n cloud workflow) | [latex-self-hosted.md](latex-self-hosted.md) |
+| `scrapers/startups.nrw/` | One-off Playwright scraper that harvests NRW-region startup contact data, feeding the cold-outreach workflows | [scrapers.md](scrapers.md) |
+| `tailor cover letter/` | Static HTML front-end for the on-demand "tailor CV + cover letter" n8n webhook | [tailor-cover-letter.md](tailor-cover-letter.md) |
+| `Automated workflows/` | n8n workflow exports: company/contact discovery, bounce cleanup, cold-email sending, and the webhook-driven CV/cover-letter tailoring backend | [automated-workflows.md](automated-workflows.md) |
+| `deploy/helm/job-automation/` | Kubernetes deployment: containerized XING/join/latex-compiler, Helm chart, CI/CD | [deployment.md](deployment.md) |
+
+## How the pieces fit together
+
+```
+                     ┌─────────────────────┐
+                     │  scrapers/startups.nrw│
+                     │  (contact harvesting) │
+                     └──────────┬──────────┘
+                                │ writes to Google Sheet "startups-nrw"
+                                ▼
+ ┌───────────────────┐   ┌─────────────────────┐   ┌────────────────────────┐
+ │ Company Discovery  │──▶│  Google Sheet        │◀──│ Remove-Bounced-Email   │
+ │ (n8n, finds new     │   │  (contacts DB)        │   │ (n8n, prunes bad rows) │
+ │  companies/emails)  │   └──────────┬────────────┘   └────────────────────────┘
+ └───────────────────┘              │
+                                     ▼
+                          ┌───────────────────┐
+                          │  mail-sender (n8n)  │  sends cold outreach emails
+                          └───────────────────┘
+
+ ┌────────────────────┐        ┌────────────────────────────┐
+ │ tailor cover letter │──────▶│ tailor cv+cover-letter__V2   │
+ │ (static HTML UI)     │  JWT  │ (n8n webhook workflow)        │
+ └────────────────────┘        └──────────────┬─────────────┘
+                                                │ HTTP POST /compile
+                                                ▼
+                                   ┌─────────────────────┐
+                                   │ latex-self-hosted     │  (deployed twice:
+                                   │ (Flask + Docker/TeX)  │   Heroku for CV,
+                                   └─────────────────────┘   Cloud Run for CL)
+
+ ┌────────────┐     ┌────────────┐
+ │   XING/     │     │   join/     │   independent end-to-end pipelines:
+ │  pipeline   │     │  pipeline   │   harvest → filter → enrich → classify → apply
+ └────────────┘     └────────────┘   (each has its own local Docker/TeX compile step)
+```
+
+## Shared conventions across the Python pipelines (`XING/`, `join/`)
+
+- **State-driven pipeline**: each stage reads/writes an Excel file (`output/*.xlsx`) so a crash mid-run doesn't lose progress — rerunning resumes from the last unprocessed row.
+- **AI engine**: Google Gemini (`google-generativeai`) for filtering, classification, tailoring, and answering ATS custom questions. `join/` additionally supports OpenRouter as a fallback provider.
+- **Document generation**: LaTeX `.tex` templates, compiled to PDF via a Dockerized `texlive/texlive:latest` container (no local TeX install needed).
+- **Browser automation**: Playwright, using a saved login session (`config/session.json`) captured once via a manual `login.py` run.
+- **Config**: centralized in `config/settings.py`, secrets in `config/.env`, AI prompts externalized as `.txt` files under `config/prompts/`.
+
+## Known hardening item
+
+`tailor cover letter/index.html` embeds its JWT-signing secret in plaintext client-side JavaScript (and the same secret is duplicated in the `tailor cv+cover-letter__V2.json` n8n workflow's verification node). Anyone who views the page source can read and reuse it. See [tailor-cover-letter.md](tailor-cover-letter.md) for details — flagged here for awareness, not yet remediated.

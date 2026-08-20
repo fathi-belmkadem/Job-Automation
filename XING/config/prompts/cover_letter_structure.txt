@@ -1,0 +1,12 @@
+{{base_prompt}}
+        
+=== TAILORED CV CONTENT ===
+{{cv_content}}
+
+=== JOB DESCRIPTION ===
+{{description}}
+
+=== TEMPLATE ===
+{{template_text}}
+
+IMPORTANT: OUTPUT ONLY THE LATEX CODE. NO MARKDOWN.

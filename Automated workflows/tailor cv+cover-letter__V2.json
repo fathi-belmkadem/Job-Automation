@@ -1,0 +1,943 @@
+{
+  "name": "Job Application Automator V2 (CV + Cover Letter)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "auto-apply-v2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a969ac72-8f95-4925-a816-2b63bd966d74",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -1632,
+        144
+      ],
+      "webhookId": "job-app-v2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst SECRET_KEY = 'fathimk666';\nconst inputData = $input.first().json;\nconst headers = inputData.headers;\nconst authHeader = headers.authorization || headers.Authorization;\n\nif (!authHeader || !authHeader.startsWith('Bearer ')) {\n  return { json: { authorized: false, error: 'Missing or invalid Authorization header' } };\n}\n\nconst token = authHeader.split(' ')[1];\n\ntry {\n  const parts = token.split('.');\n  if (parts.length !== 3) throw new Error('Invalid JWT structure');\n  \n  const [headerB64, payloadB64, signatureB64] = parts;\n  const signatureInput = `${headerB64}.${payloadB64}`;\n  const hmac = crypto.createHmac('sha256', SECRET_KEY);\n  hmac.update(signatureInput);\n  const calculatedSignature = hmac.digest('base64').replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');\n  \n  if (calculatedSignature !== signatureB64) {\n    return { json: { authorized: false, error: 'Invalid signature' } };\n  }\n  \n  let paddedPayload = payloadB64.replace(/-/g, '+').replace(/_/g, '/');\n  while (paddedPayload.length % 4) paddedPayload += '=';\n  const payload = JSON.parse(Buffer.from(paddedPayload, 'base64').toString('utf-8'));\n  \n  if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) {\n    return { json: { authorized: false, error: 'Token expired' } };\n  }\n  \n  return { json: { authorized: true, payload, body: inputData.body } };\n} catch (error) {\n  return { json: { authorized: false, error: error.message } };\n}"
+      },
+      "id": "3f29a23a-9415-4e83-adfa-cb6f20456327",
+      "name": "Verify JWT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1424,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $json.authorized }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "62db6149-4b4e-4d6c-8d78-c3bf0b1a1952",
+      "name": "Is Authenticated?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1232,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\": \"error\", \"message\": \"Unauthorized\", \"details\": \"{{ $json.error }}\"}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "a2460f23-28c3-46e3-ae55-5cfdddb21107",
+      "name": "401 Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "resume-text",
+              "name": "resume_text",
+              "value": "Fathi BELMKADEM Cybersecurity Engineer | MS Artificial Intelligence Candidate fathimk666@gmail.com Passau, Germany github.com/fathi-belmkadem +4915511712618 linkedin.com/in/fathi-belmkadem\nEDUCATION\nUniversität Passau, Master of Science - MS, Artificial Intelligence 10/2025 - present | Passau, Munich\ncourses: Mathematics for AI, LLMops, Deep Learning, Machine Learning, Software Development, Natural Language Processing (NLP), and Cloud Computing.\nHigher School of Communication of Tunis - SUP’COM, Engineering Diploma – Telecommunication : Cyber Security and Defence 09/2021 - 10/2024 | Ariana, Tunisia\ncourses: Ethical Hacking and Penetration testing, Blockchain, Cyber infrastructures protection, Intrusion detection, IoT, cloud computing Security and Application Security.\nPROFESSIONAL EXPERIENCE\nOrange TN, Cyber Security Engineer 10/2024 – 05/2025 | Tunis, Tunisia\n•Automated network security audits and traffic filtering tasks using Python reducing manual configuration time by 40% across 50+ enterprise firewall environments.\n•Engineered robust infrastructure security by deploying Fortinet, Juniper SRX, and Cisco WAF policies, resulting in a 25% reduction in unauthorized intrusion attempts for B2B clients.\n•Optimized B2B secure connectivity by architecting VPN infrastructures via MPLS and L2VPN ensuring 99.9% uptime for remote enterprise access.\n•Streamlined incident response by integrating real-time alerting systems with SIEM logs and Wireshark analysis.\nRiskImmune, Penetration Tester Intern 02/2024 – 07/2024 | Tunis, Tunisia\n•Architected an autonomous AI-driven penetration testing system using Reinforcement Learning and Deep Learning, achieving a 92% accuracy rate in identifying exploitable vulnerabilities.\n•Orchestrated automated security testing pipelines via Docker and GitLab CI/CD, accelerating the vulnerability assessment lifecycle by 50% across distributed network environments.\n•Secured automated scanning workflows by implementing RBAC and IAM protocols, ensuring 100% compliance with ethical hacking standards and zero-trust security principles.\n6NLG, Part-Time Tutor 09/2023 – 01/2024 | Tunis, Tunisia (Hybrid)\n•Integrated the MITRE ATT&CK framework into a SOAR platform, improving threat response efficiency by 45% through automated mapping of adversary techniques to playbooks.\n•Automated OSquery data collection and parsing using Python and the ELK Stack, increasing visibility into system artifacts by 60% across hybrid cloud infrastructures.\n•Engineered 20+ custom detection rules for complex attack vectors, resulting in a 20% reduction in MTTR (Mean Time to Respond) during simulated security incidents.\nINOTEQIA, AI Security Intern 06/2023 – 08/2023 | Tunis, Tunisia\n•Implemented Scikit-learn based machine learning models within a Cuckoo Sandbox environment, enhancing evasive malware detection by 30% and identifying 15+ unknown threat signatures.\n•Scaled the analysis environment using Docker containers, allowing for 3x higher throughput of malware samples while maintaining strict network segmentation and isolation.\nANCS, Network Surveillance Intern 06/2022 – 08/2022 | Tunis, Tunisia\n•Developed Deep Learning models for real-time network traffic surveillance, improving the identification of anomalous patterns and DDoS signatures by 25%.\n•Integrated ML-based traffic analysis tools into existing VPC Security Groups, providing real-time alerts and reducing incident identification time by 40%.\n•Modernized network defense protocols by formulating automated mitigation strategies based on traffic behavior analysis and historical threat data.\nPROJECTS\nOutfai, AI-Powered Fashion Assistant 03/2025 – Ongoing\n•Architected a production-grade mobile assistant using React Native (Expo) and Google Vertex AI, delivering personalized styling recommendations via automated image analysis and NLP.\n•Engineered a scalable serverless backend on Supabase, implementing caching strategies that reduced API response latency by 45% for vision-based inference tasks.\n•Integrated vector databases to manage user style profiles, improving recommendation accuracy by 30% through fine-tuned retrieval-augmented generation (RAG) workflows.\nKinetrack, Physiotherapy SaaS CRM 08/2025 – 10/2025\n•Architected a scalable multi-tenant SaaS platform with strict data isolation for multiple healthcare providers, managing 500+ patient profiles and clinical workflows through a single infrastructure instance.\n•Engineered automated clinical modules for invoicing, insurance validation, and intelligent scheduling, reducing administrative overhead for clinic staff by approximately 35%.\n•Built a real-time analytics dashboard using React and D3.js, enabling tenants to track revenue growth and therapist KPIs with a 20% increase in operational transparency.\n•Automated deployment pipelines via GitHub Actions and Docker, achieving 99.9% system uptime and facilitating seamless canary deployments for tenant-specific feature rollouts.\nEnterprise WAF Implementation 01/2023 – 05/2023\n•Deployed a high-availability Web Application Firewall (WAF) using ModSecurity as a reverse proxy, securing three containerized microservices within a Kubernetes cluster.\n•Configured custom OWASP Core Rule Sets to mitigate SQLi and XSS vectors, resulting in a 70% reduction in successful web-based attack attempts during red-team testing.\n•Established an observability stack to monitor security logs in real-time, improving incident response time to security events by 50%.\nIoT Meteorology Station Dashboard 10/2022 – 01/2023\n•Prototyped a real-time monitoring application to visualize meteorological data from LoRaWAN sensors, handling high-throughput time-series data with InfluxDB.\n•Developed a high-performance API using FastAPI to serve processed sensor data to a Flutter mobile frontend, maintaining low end-to-end data latency.\nSKILLS\nCybersecurity: Penetration Testing, SIEM, MITRE ATT&CK, SOAR, Fortinet, Palo Alto, Metasploit, Burp Suite, Nmap, Wireshark, OSINT, Network Segmentation\nAI & LLMs: LLMOps, Prompt Engineering, RAG (Retrieval-Augmented Generation), PyTorch, Hugging Face, Scikit-learn, Deep Learning, Google Vertex AI\nInfrastructure & Cloud: Docker, Kubernetes, Terraform, GitHub Actions, GitLab CI/CD, AWS, GCP, Unix Shell, Powershell, InfluxDB, PostgreSQL, MongoDB\nSoftware Development: Python, JavaScript/TypeScript, React, Next.js, Node.js, C/C++, C#, Nim, Assembly, SQL, HTML/CSS, SaaS Architecture (Multi-tenancy)\nSoft Skills: Technical Writing, Public Speaking, Agile/Scrum, Leadership, Incident Response\nLANGUAGES\nEnglish (Professional Proficiency / TOEIC: 800), French (B2), Arabic (Native), German (A1)",
+              "type": "string"
+            },
+            {
+              "id": "folder-id",
+              "name": "target_folder_id",
+              "value": "1Zh_wMh2TdqqJGIae0wswl7srzPYP0OYX",
+              "type": "string"
+            },
+            {
+              "id": "job-url",
+              "name": "job_url",
+              "value": "={{ $json.body.job_url }}",
+              "type": "string"
+            },
+            {
+              "id": "2dc4e5ce-b3d0-463b-9e5f-61614c88cccc",
+              "name": "job_url_test",
+              "value": "https://join.com/companies/skalar/15552175-intern-working-student-business-automation-ai-and-ops",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3494615b-0c84-49c5-a83f-30afbca95f6e",
+      "name": "USER CONFIG",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1008,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://r.jina.ai/' + $json.job_url }}",
+        "options": {}
+      },
+      "id": "f041a547-ad50-4be3-a153-16d4ac5004d6",
+      "name": "Scrape Job (Jina)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -432,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawText = $input.first().json.data || \"\";\nconst extract = (pattern) => { const match = rawText.match(pattern); return match ? match[1].trim() : null; };\n\nconst titleFull = extract(/Title:\\s*(.+)/) || \"Job Application\";\nconst url = extract(/URL Source:\\s*(.+)/);\nconst splitContent = rawText.split(\"Markdown Content:\");\nlet markdownContent = splitContent.length > 1 ? splitContent[1] : rawText;\nmarkdownContent = markdownContent.trim();\n\nlet companyName = \"Hiring Team\";\nconst companyMatch = markdownContent.match(/^([A-Z][a-zA-Z0-9\\s&]+?)\\s+(is a|is the|is an|founded in)/);\nif (companyMatch) companyName = companyMatch[1].trim();\n\nreturn [{ json: { meta: { role_title: titleFull, company_name: companyName, url: url, scraped_date: new Date().toISOString() }, content: { full_raw_text: markdownContent } } }];"
+      },
+      "id": "615c4fe3-3b03-4008-9784-337e8a107ab2",
+      "name": "Clean Scraped Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "check1",
+              "leftValue": "={{ $json.content }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a749492a-9ef0-4820-9ae9-6ae66389e095",
+      "name": "Check Scrape",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "Scraping failed or returned empty data"
+      },
+      "id": "0320ae95-c6f6-4d4e-8db6-355fb070fdcb",
+      "name": "Stop on Error",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        -1008,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1KrPFBhwnuBJzOvPj5Qtkf1LR9g5wz6T8",
+          "mode": "list",
+          "cachedResultName": "CV-Template.tex",
+          "cachedResultUrl": "https://drive.google.com/file/d/1KrPFBhwnuBJzOvPj5Qtkf1LR9g5wz6T8/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "id": "1f29a20f-c0af-46a2-b046-1419356a5f32",
+      "name": "Get CV Template",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -544,
+        816
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Ian2GmuADapDahIA",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "766344ef-0dc4-42aa-8766-9cc700471338",
+      "name": "Extract CV LaTeX",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -336,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => { let rawText = item.json.data || \"\"; let cleaned = rawText.replace(/cleaned text = empty/gi, '').replace(/\\\\n/g, '\\n').replace(/\\\\t/g, '\\t').trim(); if (cleaned.startsWith('\"') && cleaned.endsWith('\"')) cleaned = cleaned.slice(1, -1); return { json: { cv_latex_code: cleaned } }; });"
+      },
+      "id": "708c72b8-2e60-4090-85a1-ac052af941fc",
+      "name": "Clean CV LaTeX",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3-pro-preview",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3-pro-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert CV tailoring agent and LaTeX typesetter specializing in\ncybersecurity, AI/ML, and software engineering recruiting.\n\nYou receive three inputs:\n  INPUT 1 — Candidate's full CV\n  INPUT 2 — Job description\n  INPUT 3 — LaTeX template (use this exactly as the base)\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSTEP 1 — ANALYZE THE JOB DESCRIPTION\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nExtract before writing anything:\n  1. EXACT JOB TITLE — use verbatim in the header subtitle\n  2. HARD REQUIREMENTS — must-have skills, tools, qualifications\n  3. SOFT REQUIREMENTS — preferred skills, nice-to-haves\n  4. ATS KEYWORDS — every tool/technology/framework mentioned\n  5. CULTURE SIGNALS — mirror the company's tone subtly\n  6. RANK everything: most critical requirements get the most prominence\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSTEP 2 — SELECT CONTENT (STRICT LIMITS)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nThese limits are absolute. Exceeding them causes page overflow.\n\n  EXPERIENCE:  Max 3 roles. If candidate has more, DELETE the least\n               relevant entirely — do not summarize, remove it.\n               Max 2 bullets per role if using 3 roles.\n               Max 3 bullets per role if using only 2 roles.\n\n  PROJECTS:    Max 2 projects. DELETE the rest.\n               1-2 bullets each.\n\n  EDUCATION:   Max 2 entries. One line each. No coursework details.\n\n  SUMMARY:     3 sentences maximum. No filler.\n\n  SKILLS:      One line per category. No wrapping onto a second line.\n\nBefore writing, plan your content and count bullets. When in doubt: cut\na bullet, never cut quality. A tight 1-page CV always beats a 2-page one.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSTEP 3 — WRITE THE CONTENT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nSUMMARY — 3 sentences:\n  1. Who you are + strongest relevant qualification\n  2. Most relevant hands-on skill or achievement\n  3. Why you fit this specific role\n\nBULLETS — lead with results, not responsibilities:\n  GOOD: \"Wrote a scanner that checked 200 endpoints nightly — caught 14 misconfigs/week\"\n  BAD:  \"Responsible for automated endpoint misconfiguration detection\"\n\nMETRICS ARE MANDATORY. Estimate conservatively if the CV lacks them:\n  Automated a task       → \"saved ~X hours/week\"\n  Security audit         → \"found X vulnerabilities across Y systems\"\n  Detection rules        → \"cut false positive rate by ~X%\"\n  Built internal tool    → \"used by X team members daily\"\n  Process improvement    → \"reduced time by ~X%\"\n\nACTION VERBS — use: Built, Found, Wrote, Reduced, Automated, Tested,\n  Fixed, Designed, Deployed, Cut, Improved, Detected, Managed, Ran\n  Never: Spearheaded, Championed, Orchestrated, Leveraged, Synergized\n\nMirror JD language exactly — \"cloud infrastructure\" not \"cloud systems\".\nReframe honestly — surface the relevant angle. Never invent facts.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSTEP 4 — LATEX RULES (NON-NEGOTIABLE)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nTEMPLATE: Copy INPUT 3 preamble and macros EXACTLY.\n  Change only the content inside \\begin{document}...\\end{document}.\n  Do NOT add, remove, or replace any packages.\n\nENGINE: XeLaTeX. These will crash the server — never write them:\n  \\usepackage{fontspec}   \\setmainfont{...}\n  \\usepackage{helvet}     \\renewcommand{\\familydefault}{\\sfdefault}\n  \\usepackage[T1]{fontenc}   \\usepackage[utf8]{inputenc}\n  %!TEX program = xelatex\n\nHEADER: Copy from INPUT 3 exactly. Only edit the job title subtitle.\n  Inner minipage MUST use \\linewidth — NOT \\paperwidth:\n    CORRECT: \\begin{minipage}[c]{\\dimexpr\\linewidth - 2.8cm\\relax}\n    BROKEN:  \\begin{minipage}[c]{\\dimexpr\\paperwidth - 4.35cm\\relax}\n\nPERCENT SIGNS:\n  In content:    40\\%   92\\%   (escape it)\n  Comment line:  % This is a comment   (leave bare)\n  After brace:   \\newcommand{\\foo}[1]{%   (bare % for line continuation)\n  NEVER:         \\usepackage{helvet} \\%   or   \\newcommand{\\x}{\\%\n\nAMPERSANDS:\n  In text/bullets/skills:    \\&   e.g. \"MITRE ATT\\&CK\"\n  tabularx column separator: bare &\n  Inside \\entryrow{}{}:      use \\textbar\\ not &\n    BAD:  \\entryrow{\\textbf{Job} & \\textit{Co}}{Date}\n    GOOD: \\entryrow{\\textbf{Job} \\textbar\\ \\textit{Co}}{Date}\n\nOTHER SPECIAL CHARS:  \\#   \\_   \\$   \\textasciitilde{}\nQUOTES: ASCII only — ' and \" — never Unicode curly quotes ' ' \" \"\nUMLAUTS: \\\"a \\\"o \\\"u \\ss{}   e.g. Universit\\\"at Passau\n\nONE PAGE — enforced by the cleanup pipeline, but help it:\n  Use \\vspace{-4pt} to \\vspace{-6pt} between sections\n  Never use \\newpage or \\pagebreak\n  Never go below 9.5pt font size\n\nDELIMITERS — wrap output in these exact tags:\n  <<<LATEX_START>>>\n  [complete LaTeX document]\n  <<<LATEX_END>>>\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nOUTPUT FORMAT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n─── PART 1: MATCH ANALYSIS ───\n\nHard requirements covered:   [each one + how addressed]\nSoft requirements covered:   [each one + how addressed]\nRequirements NOT covered:    [honest gaps]\nATS keywords embedded:       [keyword → where it appears]\nMatch score:                 [X / 10 — be honest]\n\n─── PART 2: LATEX CV ───\n\n<<<LATEX_START>>>\n% ===== TAILORED CV: [JOB TITLE] @ [COMPANY] =====\n[full LaTeX document]\n<<<LATEX_END>>>\n\n─── PART 3: NOTES ───\n\nReframed:       [what was reframed and why]\nEstimated:      [every estimated metric with reasoning]\nGaps:           [honest mismatches]\nBefore applying:[1-3 concrete actions — certs, cover letter angles, projects]\n\nGENERATE THE OUTPUT NOW.",
+              "role": "model"
+            },
+            {
+              "content": "=### CANDIDATE CV\n{{ $('USER CONFIG').item.json.resume_text }}\n\n### JOB DESCRIPTION\n{{ $('Clean Scraped Data').item.json.content.full_raw_text }}\n\n### LATEX CV TEMPLATE\n{{ $json.cv_latex_code }}\n\nGenerate tailored CV LaTeX code."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "d19e4442-e2b5-4ad5-b0f4-3bb7b8936c03",
+      "name": "Gemini - Tailor CV",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -592,
+        1024
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "W9p1Y8n5MdmaLKTN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ═══════════════════════════════════════════════════════════\n// N8N CLEANUP NODE — Bulletproof LaTeX sanitizer for XeLaTeX\n// ═══════════════════════════════════════════════════════════\n\nconst rawOutput = $('Gemini - Tailor CV').first().json.content.parts[0].text;\nconst startTag = \"<<<LATEX_START>>>\";\nconst endTag   = \"<<<LATEX_END>>>\";\n\nlet latexCode = \"\";\nconst startIndex = rawOutput.indexOf(startTag);\nconst endIndex   = rawOutput.indexOf(endTag);\nif (startIndex !== -1 && endIndex !== -1) {\n    latexCode = rawOutput.substring(startIndex + startTag.length, endIndex).trim();\n} else {\n    latexCode = rawOutput.replace(/```latex/gi, '').replace(/```/g, '').trim();\n}\n\n// ─── EXTRACT JOB TITLE before any LaTeX processing ──────────\n// The Gemini output has a comment line: % ===== TAILORED CV: JOB TITLE @ COMPANY =====\n// This is the most reliable source — no LaTeX parsing needed.\nlet jobTitle = 'Cybersecurity Engineer';\n\n// Method 1: from the delimiter comment the AI always writes\nconst commentMatch = rawOutput.match(/TAILORED CV[:\\s-]+(.+?)\\s*@\\s*(.+?)\\s*={3}/i)\n                  || latexCode.match(/TAILORED CV[:\\s-]+(.+?)\\s*@/i);\nif (commentMatch && commentMatch[1]) {\n    const candidate = commentMatch[1].trim().replace(/%/g, '').trim();\n    if (candidate.length >= 3) jobTitle = candidate;\n}\n\n// Method 2 fallback: look for the subtitle fontsize block in the AI's header\n// ONLY match content that is NOT a LaTeX color name (no uppercase-only words)\nif (jobTitle === 'Cybersecurity Engineer') {\n    const subtitleMatch = latexCode.match(\n        /\\\\fontsize\\{(?:9|10|10\\.\\d+|11)\\}[^}]*\\}\\\\selectfont[^{]{0,40}\\\\color\\{[^}]+\\}([^}\\\\%\\n]{6,80})\\}/\n    );\n    if (subtitleMatch && subtitleMatch[1]) {\n        const candidate = subtitleMatch[1].trim();\n        // Reject if it looks like a LaTeX identifier (camelCase color names like headerFG)\n        // Real titles have spaces and mixed case words like \"Cybersecurity Engineer\"\n        const hasSpace = candidate.includes(' ');\n        const isLatexId = /^[a-zA-Z]+[A-Z][a-zA-Z]*$/.test(candidate); // camelCase = LaTeX id\n        if (hasSpace && !isLatexId && candidate.length >= 6) {\n            jobTitle = candidate;\n        }\n    }\n}\n\n// ─── FIX 1: Strip magic comment ─────────────────────────────\nlatexCode = latexCode.replace(/^%!TEX[^\\n]*\\n/m, '');\n\n// ─── FIX 2: Nuclear preamble replacement ────────────────────\nconst knownGoodPreamble = `\\\\documentclass[10pt,a4paper]{article}\n\n\\\\usepackage[default]{raleway}\n\n\\\\usepackage[\n  a4paper,\n  top=0pt, bottom=0.6cm,\n  left=0pt, right=0pt,\n  headheight=0pt, headsep=0pt\n]{geometry}\n\n\\\\usepackage{xcolor}\n\\\\definecolor{headerBG}  {HTML}{2C3E50}\n\\\\definecolor{headerFG}  {HTML}{FFFFFF}\n\\\\definecolor{subtitleFG}{HTML}{BDC3C7}\n\\\\definecolor{accentColor}{HTML}{2980B9}\n\\\\definecolor{ruleColor} {HTML}{2980B9}\n\\\\definecolor{bodyColor} {HTML}{1C1C1C}\n\\\\definecolor{dateColor} {HTML}{666666}\n\n\\\\usepackage{graphicx}\n\\\\usepackage{tikz}\n\\\\usetikzlibrary{calc}\n\\\\usepackage{array,tabularx}\n\\\\usepackage{fontawesome5}\n\\\\usepackage[hidelinks]{hyperref}\n\\\\hypersetup{colorlinks=true, urlcolor=black, linkcolor=black}\n\n\\\\usepackage{enumitem}\n\\\\setlist[itemize]{\n  label={\\\\textcolor{accentColor}{\\\\tiny\\\\faCircle}},\n  leftmargin=1.4em,\n  itemsep=1pt, parsep=0pt, topsep=2pt, partopsep=0pt\n}\n\n\\\\usepackage{microtype}\n\\\\pagestyle{empty}\n\\\\setlength{\\\\parindent}{0pt}\n\\\\setlength{\\\\parskip}{0pt}\n\\\\linespread{0.95}\n\n\\\\newcommand{\\\\profilephoto}[2][2.35cm]{%\n  \\\\begin{tikzpicture}\n    \\\\draw[accentColor, line width=2pt] (0,0) circle (#1/2);\n    \\\\clip (0,0) circle (#1/2 - 1pt);\n    \\\\node[inner sep=0pt] at (0,0)\n      {\\\\includegraphics[height=#1,keepaspectratio=false]{#2}};\n  \\\\end{tikzpicture}%\n}\n\n\\\\newcommand{\\\\hitem}[2]{%\n  {\\\\color{headerFG}\\\\small#1}\\\\enspace{\\\\color{headerFG}\\\\small#2}%\n}\n\n\\\\newcommand{\\\\cvsec}[2]{%\n  \\\\vspace{5pt}%\n  \\\\noindent{\\\\color{accentColor}#1}\\\\enspace\n  {\\\\fontsize{10}{12}\\\\selectfont\\\\bfseries\\\\color{headerBG}\\\\MakeUppercase{#2}}%\n  \\\\par\\\\vspace{-7pt}%\n  \\\\noindent{\\\\color{ruleColor}\\\\rule{\\\\linewidth}{1pt}}%\n  \\\\par\\\\vspace{2pt}%\n}\n\n\\\\newcommand{\\\\entryrow}[2]{%\n  \\\\noindent\n  \\\\begin{tabularx}{\\\\linewidth}{@{}X r@{}}\n    #1 & {\\\\footnotesize\\\\color{dateColor}#2}\n  \\\\end{tabularx}%\n  \\\\par\\\\vspace{-1pt}%\n}`;\n\nconst beginDocMatch = latexCode.match(/(\\\\begin\\{document\\}[\\s\\S]*)/);\nif (beginDocMatch) {\n    latexCode = knownGoodPreamble + '\\n\\n' + beginDocMatch[1];\n}\n\n// ─── FIX 3: Extract contact block ───────────────────────────\n// Stop strictly at \\end{minipage} — never capture beyond the\n// last hitem. The \\end{minipage}%  line was being swallowed\n// by the previous greedy regex, causing an extra closing tag.\nconst contactMatch = latexCode.match(\n    /(\\\\hitem\\{\\\\faEnvelope[\\s\\S]*?\\\\hitem\\{\\\\faGithub\\}[^\\n]*\\n?)(?:\\s*\\\\end\\{minipage\\})/\n);\nconst contactBlock = contactMatch\n    ? contactMatch[1].trim()\n    : `\\\\hitem{\\\\faEnvelope}{\\\\href{mailto:fathimk666@gmail.com}{fathimk666@gmail.com}}%\n    \\\\hspace{12pt}%\n    \\\\hitem{\\\\faPhone}{+49 155 1171 2618}%\n    \\\\hspace{12pt}%\n    \\\\hitem{\\\\faMapMarker*}{Passau, Germany}%\n    \\\\par\\\\vspace{4pt}%\n    \\\\hitem{\\\\faLinkedin}{\\\\href{https://linkedin.com/in/fathi-belmkadem}{in/fathi-belmkadem}}%\n    \\\\hspace{12pt}%\n    \\\\hitem{\\\\faGithub}{\\\\href{https://github.com/fathi-belmkadem}{github.com/fathi-belmkadem}}`;\n\n// ─── FIX 4: Replace entire header + start of body ───────────\n// Match from \\begin{document} all the way through to just before\n// the body content minipage. Replaces everything in between with\n// our known-good header, regardless of what the AI generated.\nconst goodHeader = `\\\\color{bodyColor}\n\n% HEADER\n\\\\begin{tikzpicture}[remember picture, overlay]\n  \\\\fill[headerBG]\n    (current page.north west)\n    rectangle\n    ([yshift=-3.4cm] current page.north east);\n\\\\end{tikzpicture}\n\n\\\\noindent\\\\hspace{0.75cm}%\n\\\\begin{minipage}[c][3.4cm][c]{\\\\dimexpr\\\\paperwidth - 1.5cm\\\\relax}\n  \\\\begin{minipage}[c]{2.6cm}\n    \\\\profilephoto[2.4cm]{profile.jpg}\n  \\\\end{minipage}%\n  \\\\hspace{0.3cm}%\n  \\\\begin{minipage}[c]{\\\\dimexpr\\\\linewidth - 2.9cm\\\\relax}\n    {\\\\fontsize{22}{26}\\\\selectfont\\\\bfseries\\\\color{headerFG}Fathi BELMKADEM}%\n    \\\\par\\\\vspace{2pt}%\n    {\\\\fontsize{10}{13}\\\\selectfont\\\\color{subtitleFG}\\\\textit{${jobTitle}}}%\n    \\\\par\\\\vspace{9pt}%\n    ${contactBlock}\n  \\\\end{minipage}%\n\\\\end{minipage}\n\n\\\\vspace{0.3cm}\n\n% BODY\n\\\\noindent\\\\hspace{0.9cm}%\n\\\\begin{minipage}{\\\\dimexpr\\\\paperwidth - 1.8cm\\\\relax}`;\n\n// Replace everything from \\begin{document} up to and including\n// the body \\begin{minipage} opening line\nlatexCode = latexCode.replace(\n    /\\\\begin\\{document\\}[\\s\\S]*?\\\\begin\\{minipage\\}\\{\\\\dimexpr\\\\paperwidth\\s*-[^}]+\\}/,\n    `\\\\begin{document}\\n${goodHeader}`\n);\n\n// ─── FIX 5: Unicode quotes ────────────────────────────────────\nlatexCode = latexCode.replace(/[\"\"]/g, '\"').replace(/['']/g, \"'\");\n\n// ─── FIX 6: Fix \\% in macro opening braces ───────────────────\nlatexCode = latexCode.replace(/\\{\\\\%/g, '{%');\n\n// ─── FIX 7: % escaping — line by line ────────────────────────\nlatexCode = latexCode.split('\\n').map(line => {\n    if (/^\\s*%/.test(line)) return line;\n    return line.replace(/([a-zA-Z0-9])%(?!%)/g, '$1\\\\%');\n}).join('\\n');\n\n// ─── FIX 8: Ampersand — smart two-pass ───────────────────────\nlatexCode = latexCode.replace(/(?<!\\\\)&/g, '\\\\&');\nlatexCode = latexCode.replace(\n    /(\\\\begin\\{tabularx\\}[\\s\\S]*?\\\\end\\{tabularx\\})/g,\n    (block) => block.replace(/(\\s|})\\\\&(\\s|\\{|\\\\)/g, '$1&$2')\n);\n\n// ─── FIX 9: Clamp vspace ─────────────────────────────────────\nlatexCode = latexCode.replace(/\\\\vspace\\{(\\d+(?:\\.\\d+)?)(pt)\\}/g, (_, val) =>\n    `\\\\vspace{${Math.min(parseFloat(val), 8)}pt}`\n);\nlatexCode = latexCode.replace(/\\\\vspace\\{(\\d+(?:\\.\\d+)?)(cm)\\}/g, (_, val) =>\n    `\\\\vspace{${Math.min(parseFloat(val), 0.25)}cm}`\n);\n\n// ─── FIX 10: Force itemize spacing ───────────────────────────\nlatexCode = latexCode.replace(\n    /\\\\begin\\{itemize\\}(\\[[^\\]]*\\])?/g,\n    '\\\\begin{itemize}[leftmargin=1.4em, itemsep=1pt, parsep=0pt, topsep=2pt, partopsep=0pt]'\n);\n\n// ─── FIX 11: Remove packages that crash XeLaTeX ──────────────\n[\n    /\\\\usepackage\\[T1\\]\\{fontenc\\}\\n?/g,\n    /\\\\usepackage\\[utf8\\]\\{inputenc\\}\\n?/g,\n    /\\\\usepackage\\{fontspec\\}\\n?/g,\n    /\\\\usepackage\\{helvet\\}\\n?/g,\n    /\\\\renewcommand\\{\\\\familydefault\\}\\{\\\\sfdefault\\}\\n?/g,\n    /\\\\setmainfont\\{[^}]+\\}\\n?/g,\n    /\\\\IfFontExistsTF\\{[^}]+\\}\\{[^}]+\\}\\{[^}]+\\}\\n?/g,\n    /\\\\faExternalLink\\*/g,\n].forEach(rx => { latexCode = latexCode.replace(rx, ''); });\n\nreturn { json: { latex_code: latexCode } };"
+      },
+      "id": "8d225129-9c34-4b3a-8863-3b15203834c7",
+      "name": "Extract CV Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -304,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://fathi-cv-compiler-f846f2d55ec9.herokuapp.com/compile",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"latex_code\": {{ JSON.stringify($json.latex_code) }}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data_1"
+            }
+          }
+        }
+      },
+      "id": "84153cc6-ed1e-46d2-b015-389cd95fae7c",
+      "name": "Compile CV PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -96,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "4db7bdb5-ccd8-4f59-8f64-69a296d274d4",
+      "name": "Merge PDFs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        352,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Clean Scraped Data').item.json.meta.company_name }} - {{ $('Clean Scraped Data').item.json.meta.role_title }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1Zh_wMh2TdqqJGIae0wswl7srzPYP0OYX",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "5f3a5936-6f6f-465c-9170-b826cca13389",
+      "name": "Create Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -800,
+        608
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Ian2GmuADapDahIA",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "=Motivation-Letter-Fathi-BELMKADEM",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Create Folder').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "43295676-1121-47eb-9850-3371a01ef267",
+      "name": "Upload Cover Letter",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        560,
+        672
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Ian2GmuADapDahIA",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "data_1",
+        "name": "=CV-Fathi-BELMKADEM",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Create Folder').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "2e5eaf5f-4375-4526-916e-424105d95d8a",
+      "name": "Upload CV",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        560,
+        880
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Ian2GmuADapDahIA",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "75a4d07e-7a1f-49fb-a1bb-a29808e105de",
+      "name": "Merge Uploads",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        752,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const coverUpload = $('Upload Cover Letter').first();\nconst cvUpload = $('Upload CV').first();\nconst hiringMessage = $('Inject Content').first().json.hiring_message;\nconst folder = $('Create Folder').first();\n\nconst coverBinary = $('Compile PDF').first().binary;\nconst cvBinary = $('Compile CV PDF').first().binary;\n\nlet response = {\n  status: \"success\",\n  message: \"Application documents generated successfully!\",\n  folder_link: folder.json.webViewLink,\n  cover_letter: { drive_link: coverUpload.json.webViewLink, file_name: \"Motivation-Letter-Fathi-BELMKADEM.pdf\" },\n  cv: { drive_link: cvUpload.json.webViewLink, file_name: \"CV-Fathi-BELMKADEM-Tailored.pdf\" },\n  hiring_message: hiringMessage\n};\n\nif (coverBinary && coverBinary.data) { response.cover_letter.base64_content = coverBinary.data.data; }\nif (cvBinary && cvBinary.data) { response.cv.base64_content = cvBinary.data.data; }\n\nreturn [{ json: response }];"
+      },
+      "id": "a3f9126b-536b-455f-b315-b4dcb178f462",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "5dfbcda7-64cb-4e92-a178-9eb1337cbc2f",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Safety Check: Ensure the input exists to avoid \"Referenced node doesn't exist\"\nif (!$input.first() || !$input.first().json.content) {\n  throw new Error(\"No response received from the AI node.\");\n}\n\nconst responseString = $input.first().json.content.parts[0].text;\n\n/**\n * EXTRACTION LOGIC\n * We use Regex to pull content between our custom tags. \n * This is much safer than JSON.parse for LaTeX.\n */\nfunction extractBetween(str, startTag, endTag) {\n  const startIndex = str.indexOf(startTag) + startTag.length;\n  const endIndex = str.indexOf(endTag);\n  if (str.indexOf(startTag) === -1 || endIndex === -1) return null;\n  return str.substring(startIndex, endIndex).trim();\n}\n\nlet latex = extractBetween(responseString, \"[LATEX_START]\", \"[LATEX_END]\");\nlet email = extractBetween(responseString, \"[HIRING_EMAIL_START]\", \"[HIRING_EMAIL_END]\");\n\n// Fallback if the AI fails to use tags\nif (!latex) {\n    // If tags fail, try to find a code block\n    latex = responseString.match(/\\\\documentclass[\\s\\S]*\\\\end\\{document\\}/g)?.[0] || \"Extraction Failed\";\n}\n\n/**\n * REPAIR LOGIC\n */\nif (latex !== \"Extraction Failed\") {\n  // FIX 1: The Bracket Collision (Crucial for LaTeX compilers)\n  // Finds any \\\\ followed by [ and inserts {} to break the link.\n  latex = latex.replace(/\\\\\\\\(\\s*)\\[/g, '\\\\\\\\$1{}[');\n\n  // FIX 2: Empty Line Break Error\n  latex = latex.replace(/(\\\\begin\\{[a-z*]+\\})(\\s*)\\\\\\\\/gi, '$1');\n}\n\nreturn {\n  latex_code: latex,\n  hiring_message: email || \"Email extraction failed.\"\n};"
+      },
+      "id": "02122e0b-2b7e-4b14-b49c-64dd52c332f2",
+      "name": "Inject Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3-pro-preview",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3-pro-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert Career Coach and Technical Cover letter Writer. Your task is to write a highly tailored cover letter to the candidate's CV and a specific Job Description.\n\nINPUTS:\n1. Candidate CV\n2. Job Description\n3. LaTeX Cover Letter Template\n\nINSTRUCTIONS:\n1. Analyze the Job Description for key requirements and the CV for matching skills.\n2. Fill the LaTeX Template. Keep the exact structure and packages.\n3. ONLY replace bracketed placeholders. Do NOT invent facts.\n\nOUTPUT FORMAT:\nReturn your response exactly in this format:\n\n[LATEX_START]\n(Write the full LaTeX code here. Do NOT escape backslashes. Write it as raw LaTeX code.)\n[LATEX_END]\n\n### **FORMATTING RULES (Critical)**\n1. **NO JSON**: Do not try to format this as JSON. Write raw LaTeX.\n2. **Standard LaTeX**: Use single backslashes (e.g., `\\textbf`, `\\newcommand`). Do NOT double escape.\n3. **Escape Ampersands**: You MUST write `\\&` for the symbol \"&\" (e.g., \"AI \\& Data\").\n",
+              "role": "model"
+            },
+            {
+              "content": "=Here is the data for the application:\n\n### 1. JOB DESCRIPTION & COMPANY\n{{ $('Scrape Job (Jina)').item.json.data }}\n\n### 2. CANDIDATE CV\n{{ $('USER CONFIG').item.json.resume_text }}\n\n### 3. LATEX TEMPLATE\n{{ $json.latex_code }}\n\nGenerate the JSON response containing the tailored 'latex_code' and the 'hiring_message'."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -560,
+        560
+      ],
+      "id": "6e45409b-096c-4820-9459-705c8c1e5e9a",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "W9p1Y8n5MdmaLKTN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://latex-compiler-1064069184982.europe-west1.run.app",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"latex_code\": {{ JSON.stringify($json.latex_code) }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "c61255a9-de44-4511-9f17-c2966034152f",
+      "name": "Compile PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -112,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1gcz230KWoNmvWJ_LBXJkcCM2659Rr-Y3",
+          "mode": "list",
+          "cachedResultName": "cover-letter-template.tex",
+          "cachedResultUrl": "https://drive.google.com/file/d/1gcz230KWoNmvWJ_LBXJkcCM2659Rr-Y3/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "id": "95ed9a8b-3726-4cb8-ae69-a63248d1268d",
+      "name": "Get cover-letter template",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -560,
+        368
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Ian2GmuADapDahIA",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -368,
+        368
+      ],
+      "id": "0ea59493-6484-49bc-9c8d-163c55dbc664",
+      "name": "extract latex code"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  // 1. GET INPUT\n  // We access the 'data' field from the current item\n  let rawText = item.json.data || \"\";\n\n  // 2. CLEANING LOGIC\n  \n  // Remove the \"cleaned text = empty\" artifact\n  let cleaned = rawText.replace(/cleaned text = empty/gi, '');\n\n  // Replace literal string \"\\n\" with actual new lines\n  cleaned = cleaned.replace(/\\\\n/g, '\\n');\n\n  // Replace literal string \"\\t\" with actual tabs\n  cleaned = cleaned.replace(/\\\\t/g, '\\t');\n\n  // Remove surrounding quotes if present (e.g. \" \\documentclass... \")\n  if (cleaned.startsWith('\"') && cleaned.endsWith('\"')) {\n    cleaned = cleaned.slice(1, -1);\n  }\n\n  // Final trim to remove extra whitespace at start/end\n  cleaned = cleaned.trim();\n\n  // 3. OUTPUT\n  // Return ONLY the variable 'latex_code' (this removes other fields)\n  return {\n    json: {\n      latex_code: cleaned\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        368
+      ],
+      "id": "ce36b51e-eaa8-4a59-862c-55a0eb4df516",
+      "name": "clean latex code"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        -48
+      ],
+      "id": "104a1646-2cc8-40d0-be4f-f66cbffbec4e",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verify JWT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify JWT": {
+      "main": [
+        [
+          {
+            "node": "Is Authenticated?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Authenticated?": {
+      "main": [
+        [
+          {
+            "node": "USER CONFIG",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "401 Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "USER CONFIG": {
+      "main": [
+        [
+          {
+            "node": "Scrape Job (Jina)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Job (Jina)": {
+      "main": [
+        [
+          {
+            "node": "Clean Scraped Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Scraped Data": {
+      "main": [
+        [
+          {
+            "node": "Check Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Scrape": {
+      "main": [
+        [
+          {
+            "node": "Create Folder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop on Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get CV Template": {
+      "main": [
+        [
+          {
+            "node": "Extract CV LaTeX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract CV LaTeX": {
+      "main": [
+        [
+          {
+            "node": "Clean CV LaTeX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean CV LaTeX": {
+      "main": [
+        [
+          {
+            "node": "Gemini - Tailor CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini - Tailor CV": {
+      "main": [
+        [
+          {
+            "node": "Extract CV Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract CV Code": {
+      "main": [
+        [
+          {
+            "node": "Compile CV PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile CV PDF": {
+      "main": [
+        [
+          {
+            "node": "Merge PDFs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge PDFs": {
+      "main": [
+        [
+          {
+            "node": "Upload Cover Letter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Folder": {
+      "main": [
+        [
+          {
+            "node": "Get CV Template",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get cover-letter template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Cover Letter": {
+      "main": [
+        [
+          {
+            "node": "Merge Uploads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload CV": {
+      "main": [
+        [
+          {
+            "node": "Merge Uploads",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Uploads": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inject Content": {
+      "main": [
+        [
+          {
+            "node": "Compile PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Inject Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile PDF": {
+      "main": [
+        [
+          {
+            "node": "Merge PDFs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get cover-letter template": {
+      "main": [
+        [
+          {
+            "node": "extract latex code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract latex code": {
+      "main": [
+        [
+          {
+            "node": "clean latex code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clean latex code": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "USER CONFIG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "60beeccc-214c-4ece-88ed-456eb5f27701",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f8b44277956e9af80948076637440968a19894bca2dfbdaa4283e0361f55a895"
+  },
+  "id": "VlDw5UtFnhBlySRrKJG81",
+  "tags": []
+}

@@ -1,0 +1,668 @@
+{
+  "name": "Startups-nrw",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ",
+          "mode": "list",
+          "cachedResultName": "test-sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 577452987,
+          "mode": "list",
+          "cachedResultName": "startups-nrw",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit#gid=577452987"
+        },
+        "options": {}
+      },
+      "id": "e22cb3c9-1e12-499a-81d0-0e35b1839ad5",
+      "name": "Google Sheets - Read Companies",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -1184,
+        160
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "VOabBvYD0hWtdg1G",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "98d41f28-4d4a-4df7-bad0-8a5837f8e5b6",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -192,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.Status }}",
+              "operation": "notEqual",
+              "value2": "sent email"
+            }
+          ]
+        }
+      },
+      "id": "e65a9e0e-57d2-4393-95bb-7d981687739b",
+      "name": "Filter Not Sent",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        80,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Store CV text globally for reuse across all iterations\nconst cv_text = `\nFathi BELMKADEM\nCybersecurity engineer\nfathimk666@gmail.com\nPassau, Munich\ngithub.com/fathi-belmkadem\n+4915511712618\nlinkedin.com/in/fathi-belmkadem\nEDUCATION\nUniversität Passau, \nMaster of Science - MS, Artificial Intelligence\n10/2025 | Munich\ncourses: Mathematics, LLMops, Deep learning, software development\nHigher School of Communication of Tunis - SUPʼCOM, \nEngineering Diploma – Telecommunication\n09/2021 – 10/2025 | tunis, Tunisia\nCourses: Cyber security, Blockchain, IoT and cloud computing, Software development.\nPROFESSIONAL EXPERIENCE\nOrange TN, Network Security Engineer 11/2024 – present | tunis, Tunisia\n•Managed and optimized enterprise firewall and VPN infrastructures (Fortinet, Palo Alto, MPLS, L2VPN).\n•Performed traffic analysis and security monitoring (Wireshark, SIEM logs) to detect anomalies and \nsupport incident response.\n•Automated network security tasks using Python (log analysis, alerting, configuration checks).\n•Participated in infrastructure hardening by reviewing access controls, segmentation rules, and \ncompliance with internal security standards.\nRiskImmune, Penetration tester Intern 02/2024 – 07/2024 | tunis, Tunisia\n•Developed an AI-driven autonomous penetration testing system capable of detecting and analyzing \nvulnerabilities without manual intervention.\n•Integrated permission-aware testing and intelligent exploitability scoring, improving risk prioritization \nand reducing false positives.\n•Built a complete automated pipeline for scanning, vulnerability evaluation, and reporting across \nnetwork environments.\n6NLG, Part-Time Tutor hybrid\n•Integrated MITRE ATT&CK into a SOAR platform, enhancing threat detection and response.\n•Automated OSquery data collection and aligned detection rules with MITRE ATT&CK for improved \nthreat analysis.\n•Developed new detection rules and mitigation strategies, increasing detection accuracy and efficiency.\nPROJECTS\nKinetrack, Physiotherapy CRM 08/2025 – 10/2025\n•Built a physiotherapy-focused CRM to manage patient profiles, medical documents, insurance \nagreements, financial balances, and home-care nurse partners.\n•Implemented an intelligent appointment system with automated status tracking, invoicing, payment \nvalidation, and a smart calendar optimized for clinic workflows.\n•Developed an analytics dashboard with KPIs for revenue, growth, therapist performance, and \nconvention tracking with clinics, hospitals, and insurers.\nOutfai, AI-Powered Fashion Assistant 03/2025 – 07/2025\n•Built an AI-powered mobile fashion assistant with outfit scanning, personalized recommendations, and \nan intelligent virtual wardrobe generated through automated image analysis.\n•Implemented occasion-, weather-, and wardrobe-based styling suggestions, plus a smart shopping \nassistant that evaluates new items for compatibility with the userʼs existing collection.\n•Architected the platform using React Native (Expo), Supabase, and Google Vertex AI/Cloud Functions to \ndeliver real-time vision processing and recommendation workflows.\nSmart Water Consumption Billing CRM 09/2024 – 02/2025\n•Developed a domain-specific CRM platform for a national water utility, centralizing customer \nmanagement, billing, payments, and service operations.\n•Implemented real-time water consumption monitoring, regional oversight, vault tracking, and \nautomated alerts to streamline field and administrative workflows.\n•Delivered robust analytics and reporting tools enabling data-driven billing accuracy, anomaly detection, \nand improved operational decision-making.\nWAF Implementation 01/2023 – 05/2023\n•Deployed ModSecurity as a reverse proxy for three containerized servers, enhancing throughput, \navailability, and security.\n•Configured ModSecurity rulesets, achieving a 70% reduction in web-based attacks. Keywords: Firewall, \nXSS, SQLi, OWASP10, HTTP, Docker, Kubernetes\nMobile Application\n•Developed a mobile app to visualize and analyze meteorological data from an  IOT weather station.\n•Built the backend for data processing and storage, integrating real-time data for efficient management.\n•Established seamless communication between the IOT station, backend APIs, and mobile app, ensuring \naccurate and up-to-date data flow and visualization.\nSKILLS\nCybersecurity: Fortinet, Palo Alto, ModSecurity, Penetration Testing, SIEM, Wireshark, MITRE ATT&CK,\nSOAR, Vulnerability Assessment\nAI & LLMs: LLMOps, Prompt Engineering, LLM Integration, Google Vertex AI, Deep Learning, AI Agents\nAutomation & Integration: N8N, Make.com , Python Scripting, Web Scraping, API Integration, Workflow\nAutomation\nDevelopment: React, Vue.js, Next.js, React Native, Python, JavaScript/TypeScript, Supabase\nInfrastructure: Docker, Kubernetes, Cloud Computing, Firewall Configuration, VPN (MPLS, L2VPN)\nTools: Cursor, Replit, Lovable, OSquery, Git\nLANGUAGES\nEnglish\nTOEIC : 800\nGerman\nA1\nFrench\nB2\n \n`\n\n\nreturn { cv_text };"
+      },
+      "id": "5f46f4c5-3718-44b9-b408-f9aa5ef0d7e3",
+      "name": "Extract CV Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1376,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract raw text from Gemini response\nlet rawText = $input.first().json.content.parts[0].text;\n\n// Remove markdown code fences if present\nrawText = rawText\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\n// Parse JSON safely\nlet parsed;\ntry {\n  parsed = JSON.parse(rawText);\n} catch (e) {\n  throw new Error('Invalid JSON returned from model');\n}\n\n// Get company info from original item\nconst companyData = $('Loop Over Items').item.json;\n\nreturn {\n  email: companyData.Email,\n  company: companyData.Company,\n  fullName: companyData['Full Name'],\n  subject: parsed.subject || 'Spontaneous Application',\n  body: parsed.body || '',\n  rowIndex: companyData.__rowNum\n};\n"
+      },
+      "id": "ece57c97-77b4-4faf-9150-793c7394b53e",
+      "name": "Parse Email Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "id": "3e973644-bba9-4072-a5e1-f358cb2e79fc",
+      "name": "Gmail - Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1168,
+        128
+      ],
+      "webhookId": "ded8964f-24fd-43ad-ba49-b31e96bc9f76",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "WY7Z07gFXpG1Py8U",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ",
+          "mode": "list",
+          "cachedResultName": "test-sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 577452987,
+          "mode": "list",
+          "cachedResultName": "startups-nrw",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit#gid=577452987"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $('Parse Email Content').item.json.email }}",
+            "Status": "sent email"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Company_description",
+              "displayName": "Company_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "output",
+              "displayName": "output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "a3732fed-5ed1-4293-9c3c-c1e4946d3c72",
+      "name": "Google Sheets - Update Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1408,
+        128
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "VOabBvYD0hWtdg1G",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "minutes"
+      },
+      "id": "ca0d8965-30aa-4f70-8007-468e03d4934b",
+      "name": "Wait Between Emails",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1712,
+        272
+      ],
+      "webhookId": "d7ef0e55-ee8c-4d8c-9670-bec927d8ec76"
+    },
+    {
+      "parameters": {},
+      "id": "f4d00e10-b143-41d5-92d8-bc31684b7e02",
+      "name": "Already Sent - Skip",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        384,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3-pro-preview",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3-pro-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert German job application writer specializing in spontaneous applications (Initiativbewerbung).\n\nTASK: Create a personalized spontaneous application email that reads naturally and authentically, adapted to the company's activity and values.\n\nINPUT REQUIREMENTS:\n- Candidate's CV/background\n- Target company information\n\nOUTPUT FORMAT (STRICT):\nReturn ONLY valid JSON with no markdown, explanations, or additional text:\n{\n  \"subject\": \"string\",\n  \"body\": \"string\"\n}\n\n\nSUBJECT LINE RULES (CRITICAL):\n- Must mention EXACTLY ONE specific job position/role\n- Keep it under 60 characters\n- Format examples:\n  ✓ \"DevSecOps Engineer - AI Security Background\"\n  ✓ \"Cybersecurity Analyst - Automation Focus\"\n  ✓ \"Security Engineer - Cloud & DevOps Experience\"\n- FORBIDDEN:\n  ✗ Multiple roles: \"DevSecOps/Security Engineer\"\n  ✗ Generic: \"Opportunity at [Company]\"\n  ✗ Vague: \"Application for Position\"\n- The position must be realistic based on candidate's CV\n\nSALUTATION RULES (CRITICAL - READ CAREFULLY):\n- NEVER use placeholders like \"[Name]\", \"[Hiring Manager]\", \"[Contact Name]\", or any brackets\n- If a specific contact name is provided in the company information, use: \"Hi [ActualName],\" or \"Dear [ActualName],\"\n- If NO specific name is provided, you MUST use: \"Dear Hiring Team,\"\n- FORBIDDEN salutations:\n  ✗ \"Hi [Name],\"\n  ✗ \"Dear [Hiring Manager],\"\n  ✗ \"Dear Sir/Madam,\"\n  ✗ \"To Whom It May Concern,\"\n- ONLY ALLOWED:\n  ✓ \"Hi John,\" (if name provided)\n  ✓ \"Dear Sarah,\" (if name provided)\n  ✓ \"Dear Hiring Team,\" (if no name provided)\n\nCONTENT RULES:\n- Language: English\n- Tone: Professional but conversational—like an experienced colleague reaching out (German business etiquette)\n- Length: Maximum 220 words (body only)\n- Use ONLY information from provided CV—never invent experience\n- Avoid these AI tells: \"I am writing to express,\" \"I am excited to,\" \"leverage,\" \"synergy,\" \"cutting-edge,\" \"passionate about,\" \"would love the opportunity,\" \"I believe\"\n- No emojis or bullet points in email body\n- Keep sentences concise and punchy\n- Show genuine interest through ONE specific detail about the company\n\nSTRUCTURE (use \\n\\n for paragraph breaks):\n1. Salutation: \n   - Check if company information includes a contact name\n   - If YES: Use \"Hi [ActualName],\" or \"Dear [ActualName],\"\n   - If NO: Use \"Dear Hiring Team,\"\n   - NEVER use \"[Name]\" or any placeholder\n\n2. Opening (2-3 sentences): \n   - ONE specific observation about the company\n   - Brief connection to your background\n   GOOD: \"I've been following how [Company] handles [specific thing]. My background in AI OR cybersecurity seems relevant.\"\n\n3. Main paragraph (3-4 sentences max):\n   - Mention 1-2 most relevant experiences from CV with concrete details\n   - Focus: Cybersecurity, AI, automation, DevSecOps\n   - Be specific but brief\n\n4. Closing (1-2 sentences):\n   - State availability simply\n   GOOD: \"I'm finishing my Master's in AI at [University] and looking for a team where this combination fits. Happy to chat if you see a potential match.\"\n\n5. Sign-off: \"Best,\" or \"Best regards,\"\n\n\nCRITICAL RULES:\n- Output must be valid JSON only\n- Body MUST be under 150 words total\n- Must sound natural and conversational\n- NEVER use \"[Name]\" or any placeholder in salutation\n- Always use \"Dear Hiring Team,\" if no specific name is available\n- Subject line: ONE position only\n- No markdown, no explanations outside JSON",
+              "role": "model"
+            },
+            {
+              "content": "=Company Name: {{ $json.Company }}\nCompany Description: {{ $json.Description }}\nCompany Website : {{ $json.Website }}\nCandidate CV:\n{{ $('Extract CV Text').item.json.cv_text }}\n\nWrite a personalized spontaneous application email tailored to the company description and the candidate’s background."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        464,
+        128
+      ],
+      "id": "8bd9b054-f22e-40fe-92ee-80a24b76a8e5",
+      "name": "Generate email content",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "OeXmBV2HfwXDi8X0",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1EUXzCNz-elxxcGvZgW0HoH0jKyOiiyS3",
+          "mode": "list",
+          "cachedResultName": "Fathi-BELMKADEM-CV-5.pdf",
+          "cachedResultUrl": "https://drive.google.com/file/d/1EUXzCNz-elxxcGvZgW0HoH0jKyOiiyS3/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        944,
+        128
+      ],
+      "id": "000ac4da-7183-4b0a-96d1-1463ea7b0b19",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Ian2GmuADapDahIA",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        304,
+        128
+      ],
+      "id": "2cbb7327-a7ed-45c4-bbf5-5a5b9235a209",
+      "name": "Wait",
+      "webhookId": "d7cd6ea2-76b2-42b5-97b0-120112e6bdd2"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "40 2,10,18 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1808,
+        160
+      ],
+      "id": "3e17a521-226b-4df2-9bce-e4b72a45d78a",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "maxItems": 30
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        160
+      ],
+      "id": "266fcc90-1576-4bba-a9fb-b4ac340067ec",
+      "name": "Limit"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c14b94b6-4bcd-4f75-b28e-b5e44e8eef06",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "05029d07-8df0-4a84-b4fb-f9f16cdfb07c",
+              "leftValue": "={{ $json.Status }}",
+              "rightValue": "sent email",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        -848,
+        160
+      ],
+      "id": "cf859322-a2f6-4379-9598-98a83e89fc20",
+      "name": "Filter1"
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.floor(Math.random() * 45)+5 }}",
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1584,
+        160
+      ],
+      "id": "60f49b89-a8b7-4bb4-98cd-b00058522406",
+      "name": "Wait1",
+      "webhookId": "0312cbe2-27e6-44c0-a4cd-375118746dbd"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1664,
+        -96
+      ],
+      "id": "a8f88ada-7c08-48a0-8aa5-77a0f8de5e68",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets - Read Companies": {
+      "main": [
+        [
+          {
+            "node": "Filter1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Filter Not Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Not Sent": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Already Sent - Skip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Email Content": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Send Email": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Update Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Update Status": {
+      "main": [
+        [
+          {
+            "node": "Wait Between Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Between Emails": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already Sent - Skip": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract CV Text": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Read Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate email content": {
+      "main": [
+        [
+          {
+            "node": "Parse Email Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Generate email content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter1": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Extract CV Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Extract CV Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "40bc0b62-46d0-43f6-9f7d-95a75eb37837",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f8b44277956e9af80948076637440968a19894bca2dfbdaa4283e0361f55a895"
+  },
+  "id": "Oc491NUYTA7KDtSG",
+  "tags": []
+}

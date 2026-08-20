@@ -1,0 +1,10 @@
+{{base_prompt}}
+
+IMPORTANT: OUTPUT ONLY THE LATEX CODE. 
+NO MARKDOWN. NO COMMENTS. START WITH \documentclass.
+
+TEMPLATE TO USE:
+{{cv_template_content}}
+
+JOB DESCRIPTION:
+{{description}}

@@ -1,0 +1,81 @@
+# Default values — see values-staging.yaml / values-prod.yaml for
+# environment-specific overrides. See docs/deployment.md for the full
+# deployment runbook, including how to bootstrap the Secrets referenced here.
+
+imageRegistry: ghcr.io/CHANGEME
+imageTag: latest
+imagePullSecrets: []
+
+# --- XING pipeline + dashboard ---
+xing:
+  enabled: true
+  image:
+    repository: job-automation-xing
+  replicas: 1
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { cpu: "1", memory: 1Gi }
+  pvc:
+    size: 2Gi
+    storageClassName: ""
+  # API keys + LATEX_COMPILER_URL override, created out-of-band:
+  #   kubectl create secret generic xing-secrets --from-env-file=XING/config/.env -n <namespace>
+  secretName: xing-secrets
+  # Playwright login state, captured locally via `python src/login.py`:
+  #   kubectl create secret generic xing-session --from-file=session.json=XING/config/session.json -n <namespace>
+  sessionSecretName: xing-session
+  # Contains PII used to answer application form questions — kept as a
+  # Secret rather than baked into the image or committed to git:
+  #   kubectl create secret generic xing-personal-info --from-file=personal_info.txt=XING/config/personal_info.txt -n <namespace>
+  personalInfoSecretName: xing-personal-info
+  cronjob:
+    enabled: true
+    # Mirrors the multi-times-a-day cadence used by the existing n8n workflows.
+    schedule: "40 2,10,18 * * *"
+  ingress:
+    host: ""
+
+# --- join.com pipeline + dashboard ---
+join:
+  enabled: true
+  image:
+    repository: job-automation-join
+  replicas: 1
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { cpu: "1", memory: 1Gi }
+  pvc:
+    size: 2Gi
+    storageClassName: ""
+  secretName: join-secrets
+  sessionSecretName: join-session
+  personalInfoSecretName: join-personal-info
+  cronjob:
+    enabled: true
+    schedule: "0 4,12,20 * * *"
+  ingress:
+    host: ""
+
+# --- Shared LaTeX compiler service (internal only, never exposed via Ingress) ---
+latexCompiler:
+  enabled: true
+  image:
+    repository: job-automation-latex-compiler
+  replicas: 1
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { cpu: "1", memory: 1Gi }
+
+ingress:
+  enabled: false
+  className: nginx
+  # Neither dashboard has its own login — gate access at the Ingress with
+  # basic auth until a proper auth layer is built.
+  # kubectl create secret generic dashboard-basic-auth --from-file=auth -n <namespace>
+  basicAuthSecretName: dashboard-basic-auth
+  tls:
+    enabled: false
+    secretName: ""
+
+networkPolicy:
+  enabled: true

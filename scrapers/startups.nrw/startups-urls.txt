@@ -1,0 +1,32 @@
+
+1. Baden-Württemberg (The "Länd")[1][2][3]
+Website: startupbw.de
+Why it's similar: This is the central portal for the entire state. Like Munich Startup, it features a huge map of the ecosystem, funding information, and an event calendar.
+Also check: stuttgart-startups.de (specifically for Stuttgart).
+2. Berlin
+Website: deutsche-startups.de (Berlin Section)
+Website: berlin-partner.de
+Note: Berlin is so large it doesn't have one single "monolithic" portal like Munich. Deutsche-startups.de is the closest for news, while Berlin Partner is the official hub for resources and support.
+3. Hamburg
+Website: hamburg-startups.net[4]
+Website: startupcity.hamburg
+Why it's similar: Hamburg Startups is very close in "vibe" to Munich Startup—it is privately run, community-focused, and has a great news section. Startup City is the official government-backed portal.
+4. North Rhine-Westphalia (NRW)[5][6][7]
+Website: startups.nrw
+Website: gruender.wiwo.de (Often covers NRW heavily due to location)
+Why it's similar: Startups.nrw is a massive database and matching platform for the entire state (Cologne, Düsseldorf, Ruhr region).
+5. Hesse (Frankfurt area)[3]
+Website: starthub-hessen.de
+Website: station-frankfurt.de
+Why it's similar: Station Frankfurt is the go-to for news and events in the Frankfurt Rhein-Main area, very similar to the editorial style of Munich Startup.
+6. Saxony (Leipzig/Dresden)[8][9]
+Website: futuresax.de
+Why it's similar: This is the state-owned platform for innovation and startups in Saxony, featuring competitions, networks, and alumni lists.
+Summary Table
+State / City	Website	Type
+Baden-Württemberg	startupbw.de	Official State Portal
+Hamburg	hamburg-startups.net	Community News & Directory
+Hesse (Frankfurt)	station-frankfurt.de	Community News
+NRW	startups.nrw	Ecosystem Database
+Saxony	futuresax.de	Innovation Network
+National (Germany)	deutsche-startups.de	Major News Outlet

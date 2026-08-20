@@ -1,0 +1,32 @@
+{{- if and .Values.xing.enabled .Values.xing.cronjob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: xing-scheduled-run
+  labels: {{ include "job-automation.labels" (dict "name" "xing" "Release" .Release) | nindent 4 }}
+spec:
+  schedule: {{ .Values.xing.cronjob.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          automountServiceAccountToken: false
+          restartPolicy: Never
+          containers:
+            - name: trigger
+              image: curlimages/curl:8.10.1
+              # No PVC here — state stays owned by the always-running
+              # xing-dashboard pod; this just triggers its existing
+              # /api/action/full route on a schedule.
+              args:
+                - -f
+                - -X
+                - POST
+                - http://xing-dashboard:5000/api/action/full
+              securityContext:
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+{{- end }}

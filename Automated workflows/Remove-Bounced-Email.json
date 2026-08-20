@@ -1,0 +1,599 @@
+{
+  "name": "Bounced Email - Update Sheets account 2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -48
+      ],
+      "id": "b40a35f7-794f-453f-a793-1ffe2ffd23d3",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -144,
+        528
+      ],
+      "id": "a105220d-c8b7-4e77-a5bc-3445472cc1b9",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all input items\nconst items = $input.all();\nconst results = [];\n\nitems.forEach(item => {\n  const data = item.json;\n  \n  // Initialize result object\n  let result = {\n    messageId: data.id || '',\n    threadId: data.threadId || '',\n    from: data.From || '',\n    to: data.To || '',\n    subject: data.Subject || '',\n    snippet: data.snippet || '',\n    bouncedEmail: null,\n    bounceReason: null,\n    isDeliveryFailure: false,\n    fullContent: ''\n  };\n  \n  // Check if this is a delivery failure\n  const isBouncedEmail = \n    (data.From && (data.From.includes('mailer-daemon') || data.From.includes('Mail Delivery Subsystem'))) ||\n    (data.Subject && data.Subject.toLowerCase().includes('delivery status notification'));\n  \n  if (isBouncedEmail) {\n    result.isDeliveryFailure = true;\n    \n    // Combine all text sources for parsing\n    let textToSearch = (data.snippet || '') + ' ' + (data.Subject || '');\n    \n    // If payload exists, try to get full body content\n    if (data.payload && data.payload.parts) {\n      const extractTextFromParts = (parts) => {\n        let text = '';\n        parts.forEach(part => {\n          if (part.mimeType === 'text/plain' && part.body && part.body.data) {\n            try {\n              text += Buffer.from(part.body.data, 'base64').toString('utf-8') + ' ';\n            } catch (e) {\n              text += part.body.data + ' ';\n            }\n          }\n          if (part.parts) {\n            text += extractTextFromParts(part.parts);\n          }\n        });\n        return text;\n      };\n      \n      const fullContent = extractTextFromParts(data.payload.parts);\n      if (fullContent) {\n        textToSearch += ' ' + fullContent;\n        result.fullContent = fullContent;\n      }\n    }\n    \n    // Extract email addresses using regex\n    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/g;\n    const foundEmails = textToSearch.match(emailRegex);\n    \n    if (foundEmails && foundEmails.length > 0) {\n      // Filter out system emails\n      const bouncedEmails = foundEmails.filter(email => \n        !email.includes('googlemail.com') && \n        !email.includes('gmail.com') &&\n        !email.includes('mailer-daemon') &&\n        email !== result.to\n      );\n      \n      result.bouncedEmail = bouncedEmails[0] || null;\n    }\n    \n    // Determine bounce reason\n    const lowerText = textToSearch.toLowerCase();\n    \n    if (lowerText.includes('address couldn\\'t be found') || lowerText.includes('address not found')) {\n      result.bounceReason = 'Address not found';\n    } else if (lowerText.includes('user unknown') || lowerText.includes('no such user')) {\n      result.bounceReason = 'User does not exist';\n    } else if (lowerText.includes('mailbox full') || lowerText.includes('quota exceeded')) {\n      result.bounceReason = 'Mailbox full';\n    } else if (lowerText.includes('blocked') || lowerText.includes('rejected') || lowerText.includes('spam')) {\n      result.bounceReason = 'Blocked/Rejected as spam';\n    } else if (lowerText.includes('invalid recipient') || lowerText.includes('recipient address rejected')) {\n      result.bounceReason = 'Invalid recipient';\n    } else if (lowerText.includes('domain not found') || lowerText.includes('host not found')) {\n      result.bounceReason = 'Domain does not exist';\n    } else {\n      result.bounceReason = 'Unknown delivery failure';\n    }\n  }\n  \n  results.push(result);\n});\n\nreturn results.map(r => ({ json: r }));"
+      },
+      "id": "179c8c98-89a5-4326-911e-0d9347f27f93",
+      "name": "Extract Bounced Emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isDeliveryFailure }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "c408bc6d-3746-4c5b-ac92-b53d9390e2d2",
+      "name": "Filter - Only Bounced",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [
+        288,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get bounced emails from the filtered step\nconst bouncedItems = $('Filter - Only Bounced').all();\nconst bouncedEmails = bouncedItems\n  .filter(item => item.json.bouncedEmail)\n  .map(item => item.json.bouncedEmail.toLowerCase());\n\nif (bouncedEmails.length === 0) {\n  return [{ json: { message: 'No bounced emails to process' } }];\n}\n\n// Get all sheets data\nconst sheet1Data = $('Google Sheets - Read startups-nrw').all();\nconst sheet2Data = $('Google Sheets - Read munich-startups').all();\nconst sheet3Data = $('Google Sheets - Read Scraped').all();\n\n// Helper function to search in a sheet\nfunction searchInSheet(sheetData, sheetName, emailColumnName = 'Email') {\n  const matches = [];\n  \n  sheetData.forEach(item => {\n    const row = item.json;\n    const rowEmail = (row[emailColumnName] || '').toLowerCase().trim();\n    \n    if (bouncedEmails.includes(rowEmail)) {\n      matches.push({\n        sheetName: sheetName,\n        range: `${sheetName}!E${row.__rowNum}`, // Column E = Output column, change if needed\n        email: rowEmail,\n        rowNumber: row.__rowNum,\n        company: row.Company || row.company || '',\n        fullName: row['Full Name'] || row.fullName || '',\n        status: 'not found'\n      });\n    }\n  });\n  \n  return matches;\n}\n\n// Search in all sheets - ADJUST 'Email' if your column name is different\nconst allMatches = [\n  ...searchInSheet(sheet1Data, 'startups-nrw', 'Email'),\n  ...searchInSheet(sheet2Data, 'munich-startups', 'Email'),\n  ...searchInSheet(sheet3Data, 'Scraped', 'Email')\n];\n\nif (allMatches.length === 0) {\n  return [{ json: { message: 'No matching emails found in sheets' } }];\n}\n\n// Return results for updating\nreturn allMatches.map(match => ({ \n  json: {\n    sheetName: match.sheetName,\n    range: match.range,\n    email: match.email,\n    company: match.company,\n    fullName: match.fullName,\n    rowNumber: match.rowNumber,\n    status: match.status\n  }\n}));"
+      },
+      "id": "38732725-0135-4ed9-9f96-2c0fa136f5c9",
+      "name": "Search and Match Emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ",
+          "mode": "list",
+          "cachedResultName": "test-sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $json.sheetName }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $json.email }}",
+            "Output": "={{ $json.status }}"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Company_description",
+              "displayName": "Company_description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Output",
+              "displayName": "Output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "5c5d9dc2-e41f-466d-8582-d46963a87956",
+      "name": "Google Sheets - Update Output Column",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1088,
+        544
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "VOabBvYD0hWtdg1G",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "filters": {
+          "q": "from:mailer-daemon@googlemail.com"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        160
+      ],
+      "id": "b3ad43cd-2ffd-43b6-8e3f-1b259794398f",
+      "name": "Gmail - Get Bounced Emails",
+      "webhookId": "2240674d-9009-4eea-87a6-2a74d9920cf4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "jbUo6VhmiZdJ7fPN",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ",
+          "mode": "list",
+          "cachedResultName": "test-sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 577452987,
+          "mode": "list",
+          "cachedResultName": "startups-nrw",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit#gid=577452987"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email",
+              "lookupValue": "={{ $json.bouncedEmail }}"
+            }
+          ]
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "detectAutomatically"
+            }
+          }
+        }
+      },
+      "id": "7f3e6317-6569-44ed-9056-8bfd69540fff",
+      "name": "Google Sheets - Read startups-nrw",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        528,
+        384
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "VOabBvYD0hWtdg1G",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ",
+          "mode": "list",
+          "cachedResultName": "test-sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 304503655,
+          "mode": "list",
+          "cachedResultName": "munich-startups",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit#gid=304503655"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email",
+              "lookupValue": "={{ $json.bouncedEmail }}"
+            }
+          ]
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "detectAutomatically"
+            }
+          }
+        }
+      },
+      "id": "4d9c3194-cb5c-4ff1-8af5-c2f4895a762d",
+      "name": "Google Sheets - Read munich-startups",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        528,
+        544
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "VOabBvYD0hWtdg1G",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ",
+          "mode": "list",
+          "cachedResultName": "test-sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 386478830,
+          "mode": "list",
+          "cachedResultName": "Scraped",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1j1dL0GossVgv64vc34tc-z3fqokruUui3SAd1qJuFeQ/edit#gid=386478830"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email",
+              "lookupValue": "={{ $json.bouncedEmail }}"
+            }
+          ]
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "detectAutomatically"
+            }
+          }
+        }
+      },
+      "id": "103eb004-3792-4278-b37d-4d604cf3e8c2",
+      "name": "Google Sheets - Read Scraped",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        528,
+        704
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "VOabBvYD0hWtdg1G",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "messageId": "={{ $('Gmail - Get Bounced Emails').item.json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1264,
+        544
+      ],
+      "id": "9256be31-aa8b-4a40-af46-da24aaedf35b",
+      "name": "Delete a message",
+      "webhookId": "d2c2a797-8a45-4b23-91dd-da6bc5de17dd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "jbUo6VhmiZdJ7fPN",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1328,
+        800
+      ],
+      "id": "8f8d69b4-6f6c-4203-afb6-2411a4de97b5",
+      "name": "Wait",
+      "webhookId": "bdede02f-d130-4201-b552-18120555ffa5"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        912,
+        544
+      ],
+      "id": "6ab5720d-3b83-47af-8835-6d9d375ebc59",
+      "name": "Wait1",
+      "webhookId": "11e02024-39a4-448c-b98b-c8d4ec2977bc"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        160
+      ],
+      "id": "a6af5747-738b-487c-b765-ead81ffed883",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Get Bounced Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extract Bounced Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Bounced Emails": {
+      "main": [
+        [
+          {
+            "node": "Filter - Only Bounced",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter - Only Bounced": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Read startups-nrw",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Sheets - Read munich-startups",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Sheets - Read Scraped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search and Match Emails": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Get Bounced Emails": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Read startups-nrw": {
+      "main": [
+        [
+          {
+            "node": "Search and Match Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Read munich-startups": {
+      "main": [
+        [
+          {
+            "node": "Search and Match Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Read Scraped": {
+      "main": [
+        [
+          {
+            "node": "Search and Match Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Update Output Column": {
+      "main": [
+        [
+          {
+            "node": "Delete a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a message": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Update Output Column",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Get Bounced Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "c8557403-c982-4c93-af3f-075f5b4e2e21",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f8b44277956e9af80948076637440968a19894bca2dfbdaa4283e0361f55a895"
+  },
+  "id": "2xRHpBlBbFcaaH3t",
+  "tags": []
+}

@@ -1,0 +1,15 @@
+{{- if .Values.xing.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: xing-workspace
+  labels: {{ include "job-automation.labels" (dict "name" "xing" "Release" .Release) | nindent 4 }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- if .Values.xing.pvc.storageClassName }}
+  storageClassName: {{ .Values.xing.pvc.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.xing.pvc.size }}
+{{- end }}

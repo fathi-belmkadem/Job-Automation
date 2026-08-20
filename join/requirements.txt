@@ -1,0 +1,11 @@
+python-dotenv
+# Pinned to match the base image tag in Dockerfile (mcr.microsoft.com/playwright/python:v1.49.0-jammy)
+playwright==1.49.0
+pandas
+google-generativeai
+openai
+requests
+openpyxl
+flask
+flask-cors
+gunicorn

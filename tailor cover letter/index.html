@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Job Application Automator V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // ---------------------------------------------------------
+      // CONFIGURATION
+      // ---------------------------------------------------------
+      const WEBHOOK_URL = "https://n8n.kinetrack.app/webhook/auto-apply-v2";
+      const SECRET_KEY = "fathimk666";
+
+      // ---------------------------------------------------------
+      // JWT GENERATION LOGIC (Browser-native)
+      // ---------------------------------------------------------
+      async function generateJWT(payload) {
+        const header = { alg: "HS256", typ: "JWT" };
+        const now = Math.floor(Date.now() / 1000);
+
+        const fullPayload = {
+          ...payload,
+          iat: now,
+          exp: now + 3600,
+        };
+
+        const base64UrlEncode = (str) => {
+          return btoa(String.fromCharCode(...new Uint8Array(str)))
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/\=+$/, "");
+        };
+
+        const encodeObj = (obj) => {
+          return base64UrlEncode(new TextEncoder().encode(JSON.stringify(obj)));
+        };
+
+        const encodedHeader = encodeObj(header);
+        const encodedPayload = encodeObj(fullPayload);
+        const tokenData = `${encodedHeader}.${encodedPayload}`;
+
+        const key = await window.crypto.subtle.importKey(
+          "raw",
+          new TextEncoder().encode(SECRET_KEY),
+          { name: "HMAC", hash: "SHA-256" },
+          false,
+          ["sign"]
+        );
+
+        const signature = await window.crypto.subtle.sign(
+          "HMAC",
+          key,
+          new TextEncoder().encode(tokenData)
+        );
+
+        return `${tokenData}.${base64UrlEncode(signature)}`;
+      }
+
+      // ---------------------------------------------------------
+      // UI INTERACTIONS
+      // ---------------------------------------------------------
+      async function handleApply(event) {
+        event.preventDefault();
+
+        const btn = document.getElementById("submitBtn");
+        const resultArea = document.getElementById("resultArea");
+        const jobUrl = document.getElementById("jobUrl").value;
+
+        // UI Loading State
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Scraping & Tailoring...`;
+
+        resultArea.classList.add("hidden");
+
+        try {
+          // 1. Generate JWT
+          const token = await generateJWT({ role: "admin" });
+
+          // 2. Send Request
+          const response = await fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ job_url: jobUrl }),
+          });
+
+          const rawResult = await response.json();
+
+          // Handle case where n8n returns an array or an object
+          const data = Array.isArray(rawResult) ? rawResult[0] : rawResult;
+
+          if (response.ok) {
+            displaySuccess(data);
+          } else {
+            throw new Error(
+              data.error || data.message || "Unknown error occurred"
+            );
+          }
+        } catch (error) {
+          alert("Error: " + error.message);
+        } finally {
+          btn.disabled = false;
+          btn.innerText = "Generate Application";
+        }
+      }
+
+      function displaySuccess(data) {
+        const resultArea = document.getElementById("resultArea");
+
+        // 1. Update Status & Company Info
+        document.getElementById("statusMsg").innerText =
+          data.message || "Success!";
+
+        const metaText =
+          data.company && data.job_title
+            ? `${data.company} • ${data.job_title.substring(0, 40)}...`
+            : "Documents Ready";
+        document.getElementById("jobMeta").innerText = metaText;
+
+        // 2. Setup Cover Letter Button
+        const clBtn = document.getElementById("clBtn");
+        if (data.cover_letter && data.cover_letter.drive_link) {
+          clBtn.href = data.cover_letter.drive_link;
+          clBtn.classList.remove("hidden");
+          clBtn.classList.add("flex");
+        } else {
+          clBtn.classList.add("hidden");
+        }
+
+        // 3. Setup CV Button
+        const cvBtn = document.getElementById("cvBtn");
+        if (data.cv && data.cv.drive_link) {
+          cvBtn.href = data.cv.drive_link;
+          cvBtn.classList.remove("hidden");
+          cvBtn.classList.add("flex");
+        } else {
+          cvBtn.classList.add("hidden");
+        }
+
+        // 4. Setup Email Text
+        const emailText = data.hiring_message || "No email text generated.";
+        document.getElementById("emailContent").innerText = emailText;
+
+        // 5. Show Results
+        resultArea.classList.remove("hidden");
+      }
+
+      function copyEmail() {
+        const text = document.getElementById("emailContent").innerText;
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.getElementById("copyBtn");
+          const originalText = btn.innerText;
+          btn.innerText = "Copied!";
+          btn.classList.add("bg-green-600", "text-white");
+          setTimeout(() => {
+            btn.innerText = originalText;
+            btn.classList.remove("bg-green-600", "text-white");
+          }, 2000);
+        });
+      }
+    </script>
+  </head>
+
+  <body
+    class="bg-slate-100 min-h-screen flex items-center justify-center p-4 font-sans"
+  >
+    <div
+      class="bg-white p-8 rounded-xl shadow-2xl max-w-lg w-full border border-gray-100"
+    >
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <div
+          class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-indigo-50 mb-4 ring-4 ring-indigo-50/50"
+        >
+          <svg
+            class="w-7 h-7 text-indigo-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            ></path>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-800 tracking-tight">
+          Job Automator V2
+        </h1>
+        <p class="text-gray-500 text-sm mt-2">
+          Generate Tailored CV & Cover Letter
+        </p>
+      </div>
+
+      <!-- Input Form -->
+      <form onsubmit="handleApply(event)" class="space-y-4">
+        <div>
+          <label
+            for="jobUrl"
+            class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 ml-1"
+            >Target Job URL</label
+          >
+          <div class="relative">
+            <input
+              type="url"
+              id="jobUrl"
+              required
+              placeholder="https://linkedin.com/jobs/view/..."
+              class="w-full pl-4 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm shadow-sm"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          id="submitBtn"
+          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition-all shadow-lg shadow-indigo-500/30 active:scale-[0.98]"
+        >
+          Generate Application
+        </button>
+      </form>
+
+      <!-- RESULTS AREA -->
+      <div
+        id="resultArea"
+        class="hidden mt-8 border-t border-gray-100 pt-6 animate-fade-in-up"
+      >
+        <!-- Success Banner -->
+        <div class="bg-green-50 border border-green-100 rounded-lg p-3 mb-4">
+          <div class="flex items-center gap-2 text-green-700 mb-1">
+            <svg
+              class="w-5 h-5 flex-shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clip-rule="evenodd"
+              ></path>
+            </svg>
+            <span id="statusMsg" class="font-bold text-sm">Success!</span>
+          </div>
+          <p id="jobMeta" class="text-xs text-green-600 ml-7 truncate"></p>
+        </div>
+
+        <!-- Download Buttons Grid -->
+        <div class="grid grid-cols-2 gap-3 mb-6">
+          <!-- Cover Letter Button -->
+          <a
+            id="clBtn"
+            href="#"
+            target="_blank"
+            class="hidden flex-col items-center justify-center gap-1 bg-gray-800 hover:bg-black text-white py-3 rounded-lg transition-colors shadow-md group"
+          >
+            <svg
+              class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              ></path>
+            </svg>
+            <span class="text-xs font-medium">Cover Letter</span>
+          </a>
+
+          <!-- CV Button -->
+          <a
+            id="cvBtn"
+            href="#"
+            target="_blank"
+            class="hidden flex-col items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition-colors shadow-md group"
+          >
+            <svg
+              class="w-5 h-5 text-blue-200 group-hover:text-white transition-colors"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              ></path>
+            </svg>
+            <span class="text-xs font-medium">Tailored CV</span>
+          </a>
+        </div>
+
+        <!-- Hiring Message Section -->
+        <div class="relative group">
+          <div class="flex justify-between items-center mb-2">
+            <label
+              class="text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >Hiring Email</label
+            >
+            <button
+              id="copyBtn"
+              onclick="copyEmail()"
+              class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded transition-colors text-gray-700 font-medium"
+            >
+              Copy
+            </button>
+          </div>
+          <div
+            class="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto shadow-inner"
+          >
+            <pre
+              id="emailContent"
+              class="text-xs text-gray-700 whitespace-pre-wrap font-mono leading-relaxed"
+            ></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8 text-center border-t border-gray-100 pt-4">
+        <p class="text-xs text-gray-400">
+          Secured via Local JWT • Gemini 2.0 Flash
+        </p>
+      </div>
+    </div>
+
+    <style>
+      .animate-fade-in-up {
+        animation: fadeInUp 0.5s ease-out forwards;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </body>
+</html>

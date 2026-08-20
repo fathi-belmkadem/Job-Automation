@@ -1,0 +1,59 @@
+{{- if .Values.ingress.enabled }}
+{{- if and .Values.xing.enabled .Values.xing.ingress.host }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: xing-dashboard
+  labels: {{ include "job-automation.labels" (dict "name" "xing" "Release" .Release) | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: {{ .Values.ingress.basicAuthSecretName }}
+    nginx.ingress.kubernetes.io/auth-realm: "Job Automation — authentication required"
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts: [{{ .Values.xing.ingress.host }}]
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.xing.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: xing-dashboard
+                port: { number: 5000 }
+---
+{{- end }}
+{{- if and .Values.join.enabled .Values.join.ingress.host }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: join-dashboard
+  labels: {{ include "job-automation.labels" (dict "name" "join" "Release" .Release) | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: {{ .Values.ingress.basicAuthSecretName }}
+    nginx.ingress.kubernetes.io/auth-realm: "Job Automation — authentication required"
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts: [{{ .Values.join.ingress.host }}]
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.join.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: join-dashboard
+                port: { number: 5000 }
+{{- end }}
+{{- end }}

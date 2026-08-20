@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XING AI Agent | Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --sidebar-bg: #111827;
+            --card-bg: rgba(30, 41, 59, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-cyan: #00f2fe;
+            --accent-purple: #4facfe;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-orange: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 242, 254, 0.04), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(79, 172, 254, 0.04), transparent 25%);
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.5rem;
+            z-index: 10;
+        }
+
+        .brand {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: linear-gradient(to right, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand i {
+            color: var(--accent-cyan);
+            -webkit-text-fill-color: initial;
+        }
+
+        .nav-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            padding: 1rem 1.2rem;
+            border-radius: 0.8rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(0, 242, 254, 0.1), transparent);
+            border-left: 3px solid var(--accent-cyan);
+        }
+
+        .status-indicator {
+            margin-top: auto;
+            padding: 1rem;
+            border-radius: 0.8rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .pulse {
+            width: 10px;
+            height: 10px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .pulse.running {
+            background: var(--accent-cyan);
+            box-shadow: 0 0 10px var(--accent-cyan);
+            animation: pulse-cyan 2s infinite;
+        }
+        
+        @keyframes pulse-cyan {
+            0% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 242, 254, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); }
+        }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            flex: 1;
+            padding: 2.5rem 3rem;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Outfit';
+            font-weight: 500;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- STATS GRID --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            padding: 1.8rem;
+            border-radius: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* --- CHART SECTION --- */
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1.2rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            height: 300px;
+        }
+
+        /* --- TABLE (Database View) --- */
+        .table-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1.2rem;
+            overflow: hidden;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1.2rem 1.5rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        td {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.95rem;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .cell-title {
+            max-width: 250px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #fff;
+            font-weight: 500;
+        }
+        
+        .cell-reason {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .btn-link {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            width: fit-content;
+        }
+
+        .badge.sent { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge.failed { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge.pending { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge.skipped { background: rgba(148, 163, 184, 0.15); color: var(--text-muted); border: 1px solid rgba(148, 163, 184, 0.3); }
+
+        .score-badge {
+            background: rgba(0, 242, 254, 0.1);
+            color: var(--accent-cyan);
+            padding: 0.2rem 0.6rem;
+            border-radius: 0.4rem;
+            font-weight: 700;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            border: 1px solid rgba(0, 242, 254, 0.3);
+        }
+
+        /* --- TERMINAL VIEW --- */
+        .terminal-container {
+            background: #0f111a;
+            border: 1px solid #2a2f4c;
+            border-radius: 0.8rem;
+            height: 70vh;
+            padding: 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            color: #a6accd;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .terminal-container::-webkit-scrollbar { width: 8px; }
+        .terminal-container::-webkit-scrollbar-track { background: #0f111a; }
+        .terminal-container::-webkit-scrollbar-thumb { background: #2a2f4c; border-radius: 4px; }
+
+        /* --- SETTINGS VIEW --- */
+        .settings-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1.2rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .settings-card h3 {
+            margin-bottom: 1rem;
+            color: var(--accent-cyan);
+        }
+
+        .settings-input {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--card-border);
+            color: #fff;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 150px;
+            margin-bottom: 1rem;
+        }
+        
+        .settings-input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+
+
+
+        /* --- ACTIONS PAGE --- */
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .action-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border: 1px solid var(--card-border);
+            padding: 2rem;
+            border-radius: 1.2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+            opacity: 0.5;
+        }
+
+        .action-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 242, 254, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--accent-cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-run {
+            background: linear-gradient(90deg, #00f2fe, #4facfe);
+            border: none;
+            padding: 0.8rem 2rem;
+            color: #fff;
+            font-family: 'Outfit';
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .btn-run:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4); }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.8rem;
+            font-weight: 500;
+            transform: translateY(150%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+        }
+        .toast.show { transform: translateY(0); }
+        .toast.error { background: rgba(239, 68, 68, 0.9); }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="brand">
+            <i class="fa-solid fa-robot"></i>
+            XING Agent
+        </div>
+        <nav class="nav-items">
+            <div class="nav-item active" onclick="switchPage('overview')">
+                <i class="fa-solid fa-chart-pie"></i> Overview
+            </div>
+            <div class="nav-item" onclick="switchPage('database')">
+                <i class="fa-solid fa-database"></i> Job Database
+            </div>
+            <div class="nav-item" onclick="switchPage('terminal')">
+                <i class="fa-solid fa-terminal"></i> Live Terminal
+            </div>
+            <div class="nav-item" onclick="switchPage('settings')">
+                <i class="fa-solid fa-sliders"></i> Configuration
+            </div>
+            <div class="nav-item" onclick="switchPage('actions')">
+                <i class="fa-solid fa-bolt"></i> Control Panel
+            </div>
+        </nav>
+        
+        <div class="status-indicator">
+            <div class="pulse" id="sys-pulse"></div>
+            <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">System Status</div>
+                <div style="font-weight: 600; font-size: 0.95rem;" id="sys-status-text">Idle</div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <!-- OVERVIEW PAGE -->
+        <div id="page-overview" class="page active">
+            <div class="header">
+                <h1>Dashboard Analytics</h1>
+                <button class="refresh-btn" onclick="loadData()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="val-total">0</div>
+                    <div class="stat-label">Total Extracted</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="val-sent" style="background: linear-gradient(45deg, #10b981, #34d399); -webkit-background-clip: text;">0</div>
+                    <div class="stat-label">Applications Sent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="val-pending" style="background: linear-gradient(45deg, #f59e0b, #fbbf24); -webkit-background-clip: text;">0</div>
+                    <div class="stat-label">Awaiting Action</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="val-failed" style="background: linear-gradient(45deg, #ef4444, #f87171); -webkit-background-clip: text;">0</div>
+                    <div class="stat-label">Failed / Skipped</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        <!-- DATABASE PAGE -->
+        <div id="page-database" class="page">
+            <div class="header">
+                <h1>Job Database & AI Insights</h1>
+                <button class="refresh-btn" onclick="loadData()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Job Title</th>
+                            <th>Company</th>
+                            <th>Status</th>
+                            <th>AI Score</th>
+                            <th>AI Reason</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="db-table-body">
+                        <!-- Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TERMINAL PAGE -->
+        <div id="page-terminal" class="page">
+            <div class="header">
+                <h1>Live Terminal</h1>
+                <button class="refresh-btn" onclick="fetchLogs()"><i class="fa-solid fa-rotate-right"></i> Refresh Logs</button>
+            </div>
+            <div class="terminal-container" id="terminal-output">
+                Loading logs...
+            </div>
+        </div>
+
+        <!-- SETTINGS PAGE -->
+        <div id="page-settings" class="page">
+            <div class="header">
+                <h1>Configuration Manager</h1>
+                <button class="btn-run" style="width: auto;" onclick="saveSettings()">Save Configuration</button>
+            </div>
+            
+            <div class="settings-card">
+                <h3><i class="fa-solid fa-address-card"></i> Personal Details (For Custom Questions)</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Provide context about your current situation (e.g., student status, visa, languages, location) so the AI can accurately fill out custom application forms without hallucinating.</p>
+                <textarea id="settings-personal" class="settings-input" style="min-height: 100px;"></textarea>
+            </div>
+
+            <div class="settings-card">
+                <h3><i class="fa-solid fa-magnifying-glass"></i> Search Keywords (JSON Array)</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Edit the keywords used during the harvesting phase.</p>
+                <textarea id="settings-keywords" class="settings-input"></textarea>
+            </div>
+
+            <div class="settings-card">
+                <h3><i class="fa-solid fa-robot"></i> AI Tailoring Prompt</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Edit the strict instructions given to Gemini for CV generation.</p>
+                <textarea id="settings-prompt" class="settings-input" style="min-height: 300px;"></textarea>
+            </div>
+        </div>
+
+        <!-- ACTIONS PAGE -->
+        <div id="page-actions" class="page">
+            <div class="header">
+                <h1>Control Panel</h1>
+                <p style="color: var(--text-muted); margin-top: 0.5rem;">Trigger pipeline modules manually.</p>
+            </div>
+
+            <div class="actions-grid">
+                <div class="action-card">
+                    <div class="action-icon"><i class="fa-solid fa-spider"></i></div>
+                    <h3>1. Harvest Jobs</h3>
+                    <p>Scrape XING for new job listings.</p>
+                    <button class="btn-run" onclick="triggerAction('harvest')">Run Harvester</button>
+                </div>
+
+                <div class="action-card">
+                    <div class="action-icon"><i class="fa-solid fa-brain"></i></div>
+                    <h3>2. AI Filter</h3>
+                    <p>Analyze job titles and descriptions.</p>
+                    <button class="btn-run" onclick="triggerAction('filter')">Run AI Filter</button>
+                </div>
+
+                <div class="action-card">
+                    <div class="action-icon"><i class="fa-solid fa-paper-plane"></i></div>
+                    <h3>3. Auto-Apply</h3>
+                    <p>Tailor CV and automatically apply.</p>
+                    <button class="btn-run" onclick="triggerAction('apply')">Run Auto-Apply</button>
+                </div>
+
+                <div class="action-card" style="border-color: var(--accent-purple);">
+                    <div class="action-icon" style="color: var(--accent-purple); background: rgba(79, 172, 254, 0.1);"><i class="fa-solid fa-forward-fast"></i></div>
+                    <h3>Full Pipeline</h3>
+                    <p>Run the entire automation sequentially.</p>
+                    <button class="btn-run" onclick="triggerAction('full')" style="background: linear-gradient(90deg, #4facfe, #00f2fe);">Execute Full Pipeline</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="toast" class="toast">Action started successfully!</div>
+
+    <script>
+        let globalJobs = [];
+        let chartInstance = null;
+        let logsInterval = null;
+
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById('page-' + pageId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            
+            if(pageId === 'database' || pageId === 'overview') loadData();
+            if(pageId === 'settings') fetchSettings();
+            
+            if(pageId === 'terminal') {
+                fetchLogs();
+                if(!logsInterval) logsInterval = setInterval(fetchLogs, 2000);
+            } else {
+                clearInterval(logsInterval);
+                logsInterval = null;
+            }
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch('/api/jobs');
+                globalJobs = await response.json();
+                renderData();
+                checkStatus();
+            } catch (err) {}
+        }
+
+        function getStatusClass(statusStr) {
+            const s = String(statusStr).toLowerCase();
+            if (s.includes('sent') || s.includes('success')) return 'sent';
+            if (s.includes('failed') || s.includes('error')) return 'failed';
+            if (s.includes('skipped') || s.includes('rejected')) return 'skipped';
+            return 'pending';
+        }
+
+        function renderData() {
+            let sent = 0, failed = 0, pending = 0, skipped = 0;
+            globalJobs.forEach(j => {
+                const s = String(j.Status).toLowerCase();
+                if (s.includes('sent')) sent++;
+                else if (s.includes('failed')) failed++;
+                else if (s.includes('skipped') || s.includes('rejected')) skipped++;
+                else pending++;
+            });
+
+            document.getElementById('val-total').innerText = globalJobs.length;
+            document.getElementById('val-sent').innerText = sent;
+            document.getElementById('val-pending').innerText = pending;
+            document.getElementById('val-failed').innerText = failed + skipped;
+
+            updateChart(sent, pending, failed, skipped);
+
+            const tbody = document.getElementById('db-table-body');
+            tbody.innerHTML = '';
+            [...globalJobs].reverse().forEach(job => {
+                const cls = getStatusClass(job.Status);
+                const score = job['AI Score'] ? `<span class="score-badge">${job['AI Score']}</span>` : '<span style="color:#64748b">-</span>';
+                const reason = job['AI Reason'] || '-';
+                
+                const escTitle = (job.Title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="cell-title" title="${job.Title}">${job.Title}</td>
+                        <td>${job.Company}</td>
+                        <td><span class="badge ${cls}">${job.Status || 'Pending'}</span></td>
+                        <td>${score}</td>
+                        <td class="cell-reason" title="${reason}">${reason}</td>
+                        <td>
+                            <a href="/api/pdf/${job._index}/cv" target="_blank" class="btn-link" style="margin-right:8px;" title="View Generated CV">CV <i class="fa-regular fa-file-pdf"></i></a>
+                            <a href="/api/pdf/${job._index}/cover_letter" target="_blank" class="btn-link" style="margin-right:8px;" title="View Generated Cover Letter">Letter <i class="fa-solid fa-file-lines"></i></a>
+                            <a href="${job.URL}" target="_blank" class="btn-link" title="Open Job Post on XING">Link <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function updateChart(sent, pending, failed, skipped) {
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+            
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.font.family = 'Outfit';
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Sent', 'Pending', 'Failed', 'Skipped'],
+                    datasets: [{
+                        label: 'Applications',
+                        data: [sent, pending, failed, skipped],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(148, 163, 184, 0.8)'
+                        ],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        async function triggerAction(actionName) {
+            try {
+                const res = await fetch('/api/action/' + actionName, { method: 'POST' });
+                const data = await res.json();
+                showToast(data.message, res.ok ? 'success' : 'error');
+                checkStatus();
+                if(res.ok) switchPage('terminal'); // Auto jump to terminal!
+            } catch(e) { showToast("Error connecting to server", "error"); }
+        }
+
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                const pulse = document.getElementById('sys-pulse');
+                const text = document.getElementById('sys-status-text');
+                if (data.is_running) {
+                    pulse.classList.add('running');
+                    text.innerText = 'Task Running...'; text.style.color = 'var(--accent-cyan)';
+                } else {
+                    pulse.classList.remove('running');
+                    text.innerText = 'Idle / Ready'; text.style.color = 'var(--text-main)';
+                }
+            } catch(e) {}
+        }
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/logs');
+                const data = await res.json();
+                const term = document.getElementById('terminal-output');
+                const isScrolledToBottom = term.scrollHeight - term.clientHeight <= term.scrollTop + 10;
+                term.innerText = data.logs || "No logs available.";
+                if (isScrolledToBottom) term.scrollTop = term.scrollHeight;
+            } catch(e) {}
+        }
+
+        async function fetchSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                document.getElementById('settings-keywords').value = JSON.stringify(data.keywords, null, 4);
+                document.getElementById('settings-prompt').value = data.prompt;
+                document.getElementById('settings-personal').value = data.personal_info || "";
+            } catch(e) {}
+        }
+
+        async function saveSettings() {
+            try {
+                const kwStr = document.getElementById('settings-keywords').value;
+                const ptStr = document.getElementById('settings-prompt').value;
+                const pInfoStr = document.getElementById('settings-personal').value;
+                
+                const payload = { prompt: ptStr, personal_info: pInfoStr };
+                try { payload.keywords = JSON.parse(kwStr); } 
+                catch(e) { return showToast("Invalid JSON in Keywords", "error"); }
+
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if(res.ok) showToast("Configuration Saved!");
+                else showToast("Error saving configuration", "error");
+            } catch(e) { showToast("Error saving configuration", "error"); }
+        }
+
+        function showToast(msg, type='success') {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.className = 'toast show ' + (type === 'error' ? 'error' : '');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        loadData();
+        setInterval(checkStatus, 5000);
+    </script>
+</body>
+</html>

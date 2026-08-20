@@ -1,0 +1,12 @@
+CRITICAL CANDIDATE FACTS (OVERRIDE ALL OTHER ASSUMPTIONS):
+- Name: [Full Name]
+- Nationality: [Nationality]
+- Visa Status: [e.g. Has Valid Work Permit / Needs Sponsorship]
+- Location: [City, Country]
+- Languages: [Language (Level), ...]
+- Availability: [e.g. Immediate / Short Notice / From <date>]
+- Expected Salary: [range] [currency]/year
+- Expected Hourly Rate: [range] [currency]/hour
+- Driving License: [Yes/No] (Class [X])
+- LinkedIn: [URL]
+- GitHub: [URL]

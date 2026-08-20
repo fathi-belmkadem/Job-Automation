@@ -1,0 +1,12 @@
+output/
+debug/
+scratch/
+__pycache__/
+*.pyc
+.env
+config/session.json
+Optional_files/
+*.xlsx
+.git/
+Dockerfile
+.dockerignore

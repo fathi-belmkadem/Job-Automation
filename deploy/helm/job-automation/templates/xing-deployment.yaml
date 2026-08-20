@@ -1,0 +1,73 @@
+{{- if .Values.xing.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xing-dashboard
+  labels: {{ include "job-automation.labels" (dict "name" "xing" "Release" .Release) | nindent 4 }}
+spec:
+  replicas: {{ .Values.xing.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: xing
+  template:
+    metadata:
+      labels: {{ include "job-automation.labels" (dict "name" "xing" "Release" .Release) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1000
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: xing
+          image: {{ include "job-automation.image" (dict "root" $ "repository" .Values.xing.image.repository) }}
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - secretRef:
+                name: {{ .Values.xing.secretName }}
+          env:
+            # Explicit override: guarantees the in-cluster compiler URL wins
+            # even if xing-secrets was bootstrapped from a local .env that
+            # points at localhost.
+            - name: LATEX_COMPILER_URL
+              value: "http://latex-compiler:5000"
+          volumeMounts:
+            - name: workspace
+              mountPath: /app/output
+            - name: session
+              mountPath: /app/config/session.json
+              subPath: session.json
+              readOnly: true
+            - name: personal-info
+              mountPath: /app/config/personal_info.txt
+              subPath: personal_info.txt
+              readOnly: true
+          resources: {{ toYaml .Values.xing.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          livenessProbe:
+            httpGet: { path: /healthz, port: 5000 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet: { path: /healthz, port: 5000 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: xing-workspace
+        - name: session
+          secret:
+            secretName: {{ .Values.xing.sessionSecretName }}
+        - name: personal-info
+          secret:
+            secretName: {{ .Values.xing.personalInfoSecretName }}
+{{- end }}

@@ -1,0 +1,27 @@
+{{- if and .Values.networkPolicy.enabled .Values.latexCompiler.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: latex-compiler-restrict-ingress
+  labels: {{ include "job-automation.labels" (dict "name" "latex-compiler" "Release" .Release) | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: latex-compiler
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        {{- if .Values.xing.enabled }}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: xing
+        {{- end }}
+        {{- if .Values.join.enabled }}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: join
+        {{- end }}
+      ports:
+        - port: 5000
+{{- end }}

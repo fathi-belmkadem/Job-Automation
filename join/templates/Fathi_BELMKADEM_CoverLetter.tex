@@ -1,0 +1,73 @@
+\documentclass[a4paper,11pt]{letter}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\usepackage{microtype}
+\usepackage{tikz}
+\usepackage{fontawesome5}
+\usepackage{setspace}
+
+% Professional Colors
+\definecolor{primarycolor}{RGB}{20, 40, 100}
+\definecolor{accentcolor}{RGB}{51, 103, 214}
+\definecolor{textmain}{RGB}{68, 68, 68}
+
+\hypersetup{hidelinks}
+
+% Header Rule
+\newcommand{\headerrule}{
+    \begin{tikzpicture}
+        \draw[accentcolor!40,line width=0.7pt] (0,0) -- (\textwidth,0);
+    \end{tikzpicture}
+}
+
+\begin{document}
+
+% HEADER
+\begin{center}
+    {\Huge \textbf{\color{primarycolor}Fathi BELMKADEM}} \\[4pt]
+    {\Large \color{textmain} Cybersecurity Engineer} \\[6pt]
+    
+    \small\textcolor{textmain}{%
+    \faMapMarker*~ Germany \quad
+    \faPhone*~ +49 15511712618 \quad
+    \faIcon{envelope}~\href{mailto:fathi.belmkadem@gmail.com}{fathi.belmkadem@gmail.com} \quad
+    \faLinkedin~\href{https://linkedin.com/in/fathi-belmkadem}{fathi-belmkadem}}
+    
+    \vspace{5pt}
+    \headerrule
+\end{center}
+
+\vspace{1em}
+
+% RECIPIENT
+\begin{flushleft}
+    {\color{textmain}\today}\\[10pt]
+    {\color{primarycolor}\textbf{CARIAD SE}}\\
+    Recruiting Team\\
+    Ingolstadt / Remote, Germany
+\end{flushleft}
+
+\vspace{1em}
+
+{\color{primarycolor}\textbf{}}
+
+\vspace{1em}
+
+\begin{spacing}{1.15}
+{\color{textmain}
+
+
+}
+\end{spacing}
+
+\end{document}
