@@ -9,58 +9,52 @@ A shared LaTeX-compilation microservice and a webhook-triggered on-demand varian
 
 ## Modules
 
-| Module | What it does | Docs |
-|---|---|---|
-| `XING/` | Full pipeline (harvest → filter → enrich → classify → apply) for job postings on XING.com, plus a Flask dashboard | [xing.md](xing.md) |
-| `join/` | Same pipeline concept, retargeted at join.com; jobs are discovered via search-engine queries instead of site search, and it supports multiple AI providers | [join.md](join.md) |
-| `latex-self-hosted/` | Self-hosted Flask microservice that compiles LaTeX → PDF (used by both the Python pipelines locally and by the n8n cloud workflow) | [latex-self-hosted.md](latex-self-hosted.md) |
-| `scrapers/startups.nrw/` | One-off Playwright scraper that harvests NRW-region startup contact data, feeding the cold-outreach workflows | [scrapers.md](scrapers.md) |
-| `tailor cover letter/` | Static HTML front-end for the on-demand "tailor CV + cover letter" n8n webhook | [tailor-cover-letter.md](tailor-cover-letter.md) |
-| `Automated workflows/` | n8n workflow exports: company/contact discovery, bounce cleanup, cold-email sending, and the webhook-driven CV/cover-letter tailoring backend | [automated-workflows.md](automated-workflows.md) |
-| `deploy/helm/job-automation/` | Kubernetes deployment: containerized XING/join/latex-compiler, Helm chart, CI/CD | [deployment.md](deployment.md) |
-| `terraform/` | Cluster infrastructure (GKE, currently) — provisions the Kubernetes cluster the Helm chart deploys into; not applied yet | [../terraform/README.md](../terraform/README.md) |
+| Module                        | What it does                                                                                                                                               | Docs                                             |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `XING/`                       | Full pipeline (harvest → filter → enrich → classify → apply) for job postings on XING.com, plus a Flask dashboard                                          | [xing.md](xing.md)                               |
+| `join/`                       | Same pipeline concept, retargeted at join.com; jobs are discovered via search-engine queries instead of site search, and it supports multiple AI providers | [join.md](join.md)                               |
+| `latex-self-hosted/`          | Self-hosted Flask microservice that compiles LaTeX → PDF (used by both the Python pipelines locally and by the n8n cloud workflow)                         | [latex-self-hosted.md](latex-self-hosted.md)     |
+| `scrapers/startups.nrw/`      | One-off Playwright scraper that harvests NRW-region startup contact data, feeding the cold-outreach workflows                                              | [scrapers.md](scrapers.md)                       |
+| `tailor cover letter/`        | Static HTML front-end for the on-demand "tailor CV + cover letter" n8n webhook                                                                             | [tailor-cover-letter.md](tailor-cover-letter.md) |
+| `Automated workflows/`        | n8n workflow exports: company/contact discovery, bounce cleanup, cold-email sending, and the webhook-driven CV/cover-letter tailoring backend              | [automated-workflows.md](automated-workflows.md) |
+| `deploy/helm/job-automation/` | Kubernetes deployment: containerized XING/join/latex-compiler, Helm chart, CI/CD                                                                           | [deployment.md](deployment.md)                   |
+| `terraform/`                  | Cluster infrastructure (GKE, currently) — provisions the Kubernetes cluster the Helm chart deploys into; not applied yet                                   | [../terraform/README.md](../terraform/README.md) |
 
 ## How the pieces fit together
 
-```
-                     ┌─────────────────────┐
-                     │  scrapers/startups.nrw│
-                     │  (contact harvesting) │
-                     └──────────┬──────────┘
-                                │ writes to Google Sheet "startups-nrw"
-                                ▼
- ┌───────────────────┐   ┌─────────────────────┐   ┌────────────────────────┐
- │ Company Discovery  │──▶│  Google Sheet        │◀──│ Remove-Bounced-Email   │
- │ (n8n, finds new     │   │  (contacts DB)        │   │ (n8n, prunes bad rows) │
- │  companies/emails)  │   └──────────┬────────────┘   └────────────────────────┘
- └───────────────────┘              │
-                                     ▼
-                          ┌───────────────────┐
-                          │  mail-sender (n8n)  │  sends cold outreach emails
-                          └───────────────────┘
+```mermaid
+flowchart TD
+    Scraper["scrapers/startups.nrw<br/>(contact harvesting)"]
+    Discovery["Company Discovery<br/>(n8n — finds new companies/emails)"]
+    Sheet[("Google Sheet<br/>(contacts DB)")]
+    Bounce["Remove-Bounced-Email<br/>(n8n — prunes bad rows)"]
+    Mailer["mail-sender<br/>(n8n — sends cold outreach emails)"]
 
- ┌────────────────────┐        ┌────────────────────────────┐
- │ tailor cover letter │──────▶│ tailor cv+cover-letter__V2   │
- │ (static HTML UI)     │  JWT  │ (n8n webhook workflow)        │
- └────────────────────┘        └──────────────┬─────────────┘
-                                                │ HTTP POST /compile
-                                                ▼
-                                   ┌─────────────────────┐
-                                   │ latex-self-hosted     │  (deployed twice:
-                                   │ (Flask + Docker/TeX)  │   Heroku for CV,
-                                   └─────────────────────┘   Cloud Run for CL)
+    Scraper -->|writes to 'startups-nrw' tab| Sheet
+    Discovery --> Sheet
+    Sheet <--> Bounce
+    Sheet --> Mailer
 
- ┌────────────┐     ┌────────────┐
- │   XING/     │     │   join/     │   independent end-to-end pipelines:
- │  pipeline   │     │  pipeline   │   harvest → filter → enrich → classify → apply
- └────────────┘     └────────────┘   (each has its own local Docker/TeX compile step)
+    UI["tailor cover letter<br/>(static HTML UI)"]
+    Webhook["tailor cv+cover-letter__V2<br/>(n8n webhook workflow)"]
+    UI -->|JWT-authenticated request| Webhook
+
+    LatexService["latex-self-hosted<br/>(Flask + TeX Live)"]
+    Webhook -->|HTTP POST /compile| LatexService
+
+    XING["XING/ pipeline<br/>harvest → filter → enrich → classify → apply"]
+    Join["join/ pipeline<br/>harvest → filter → enrich → classify → apply"]
+    XING -->|HTTP POST /compile| LatexService
+    Join -->|HTTP POST /compile| LatexService
 ```
+
+`latex-self-hosted` is the same Flask service in every case, but it isn't one single deployment: the n8n webhook workflow calls two separately-hosted copies (Heroku for the CV, Cloud Run for the cover letter — see [automated-workflows.md](automated-workflows.md)), while `XING/` and `join/` call a third copy running in-cluster (see [deployment.md](deployment.md)). All three are interchangeable — same code, same `/compile` API.
 
 ## Shared conventions across the Python pipelines (`XING/`, `join/`)
 
 - **State-driven pipeline**: each stage reads/writes an Excel file (`output/*.xlsx`) so a crash mid-run doesn't lose progress — rerunning resumes from the last unprocessed row.
 - **AI engine**: Google Gemini (`google-generativeai`) for filtering, classification, tailoring, and answering ATS custom questions. `join/` additionally supports OpenRouter as a fallback provider.
-- **Document generation**: LaTeX `.tex` templates, compiled to PDF via a Dockerized `texlive/texlive:latest` container (no local TeX install needed).
+- **Document generation**: LaTeX `.tex` templates, compiled to PDF via the `latex-self-hosted` service over HTTP (`LATEX_COMPILER_URL`) — see [latex-self-hosted.md](latex-self-hosted.md). Run it locally via Docker for dev, or point at the in-cluster deployment described in [deployment.md](deployment.md).
 - **Browser automation**: Playwright, using a saved login session (`config/session.json`) captured once via a manual `login.py` run.
 - **Config**: centralized in `config/settings.py`, secrets in `config/.env`, AI prompts externalized as `.txt` files under `config/prompts/`.
 
