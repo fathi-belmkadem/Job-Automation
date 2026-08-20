@@ -118,7 +118,9 @@ Update `imageRegistry` in `values.yaml` (currently `ghcr.io/CHANGEME`) and the `
 - pushes to GHCR and deploys to `job-automation-staging` on push to `main`,
 - pushes and deploys to `job-automation-prod` on a `v*` tag, gated by a GitHub **Environment** named `production` — configure required reviewers on that Environment in repo Settings → Environments so prod deploys need manual approval.
 
-Required repo secrets: `KUBECONFIG_STAGING` and `KUBECONFIG_PROD` (base64-encoded kubeconfig for each cluster/context — `cat ~/.kube/config | base64` scoped to a service account with access to just that namespace, ideally). `GITHUB_TOKEN` is provided automatically for the GHCR push.
+**`deploy-staging`/`deploy-prod` are currently skipped, not failed.** No cluster exists yet (still on minikube locally, per this doc), so each deploy job's `if:` checks whether its kubeconfig secret is actually set (`secrets.KUBECONFIG_STAGING != ''` / `secrets.KUBECONFIG_PROD != ''`) and no-ops otherwise. Add the secret when a real cluster exists (see [terraform/README.md](../terraform/README.md)) and the job starts running on its own — no workflow edit needed.
+
+Required repo secrets, once ready: `KUBECONFIG_STAGING` and `KUBECONFIG_PROD` (base64-encoded kubeconfig for each cluster/context — `cat ~/.kube/config | base64` scoped to a service account with access to just that namespace, ideally). `GITHUB_TOKEN` is provided automatically for the GHCR push.
 
 ## Known limitations of this phase
 

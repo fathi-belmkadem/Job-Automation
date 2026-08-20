@@ -74,7 +74,11 @@ jobs:
 
   deploy-staging:
     needs: build-and-scan
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Skipped (not failed) until a real staging cluster exists and
+    # KUBECONFIG_STAGING is set — see terraform/README.md and
+    # docs/deployment.md. No workflow change needed once it is: this
+    # condition flips on its own the moment the secret is added.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.KUBECONFIG_STAGING != ''
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -95,7 +99,8 @@ jobs:
 
   deploy-prod:
     needs: build-and-scan
-    if: github.ref_type == 'tag'
+    # Same idea as deploy-staging — skipped until KUBECONFIG_PROD exists.
+    if: github.ref_type == 'tag' && secrets.KUBECONFIG_PROD != ''
     runs-on: ubuntu-latest
     environment: production # requires manual approval — configure this Environment's protection rules in repo settings
     steps:
