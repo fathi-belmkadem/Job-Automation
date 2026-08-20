@@ -1,5 +1,7 @@
 # Job-Automation — Documentation Index
 
+For a full technical deep-dive covering every technology, the AI integration, containerization/Kubernetes design, CI/CD, and the security posture, see **[ARCHITECTURE.md](ARCHITECTURE.md)**. This page is a lighter-weight tour and per-module index.
+
 This project is a personal job-search automation system with two halves:
 
 1. **Job application pipelines** — scrape job boards, filter with AI, tailor a CV + cover letter per job, compile them to PDF, and auto-submit applications through the site's own apply flow.
