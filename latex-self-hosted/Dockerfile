@@ -1,6 +1,9 @@
 FROM python:3.11.10-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# apt-get upgrade pulls in Debian security patches released after this base
+# image tag was built (CI's Trivy scan gate has already caught real CVEs
+# here — libgnutls30/libssl3 — that upgrade resolves).
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     texlive-latex-base \
     texlive-latex-extra \
     texlive-fonts-recommended \
