@@ -72,13 +72,32 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-${{ matrix.service.name }}:${{ steps.tag.outputs.tag }}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-${{ matrix.service.name }}:${{ github.sha }}
 
+  # GitHub Actions rejects `secrets` referenced directly in a job-level `if:`
+  # (schema-validation error, not just a lint warning — the whole workflow
+  # file fails to parse). This job resolves each kubeconfig secret to a
+  # plain boolean output instead, which deploy-staging/deploy-prod can
+  # safely check in their own `if:` conditions below.
+  check-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      staging_ready: ${{ steps.check.outputs.staging_ready }}
+      prod_ready: ${{ steps.check.outputs.prod_ready }}
+    steps:
+      - id: check
+        env:
+          STAGING_SECRET: ${{ secrets.KUBECONFIG_STAGING }}
+          PROD_SECRET: ${{ secrets.KUBECONFIG_PROD }}
+        run: |
+          echo "staging_ready=$([ -n "$STAGING_SECRET" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "prod_ready=$([ -n "$PROD_SECRET" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
   deploy-staging:
-    needs: build-and-scan
+    needs: [build-and-scan, check-secrets]
     # Skipped (not failed) until a real staging cluster exists and
     # KUBECONFIG_STAGING is set — see terraform/README.md and
     # docs/deployment.md. No workflow change needed once it is: this
     # condition flips on its own the moment the secret is added.
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.KUBECONFIG_STAGING != ''
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.check-secrets.outputs.staging_ready == 'true'
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -98,9 +117,9 @@ jobs:
             -n job-automation-staging --create-namespace --wait --timeout 5m
 
   deploy-prod:
-    needs: build-and-scan
+    needs: [build-and-scan, check-secrets]
     # Same idea as deploy-staging — skipped until KUBECONFIG_PROD exists.
-    if: github.ref_type == 'tag' && secrets.KUBECONFIG_PROD != ''
+    if: github.ref_type == 'tag' && needs.check-secrets.outputs.prod_ready == 'true'
     runs-on: ubuntu-latest
     environment: production # requires manual approval — configure this Environment's protection rules in repo settings
     steps:
