@@ -7,23 +7,25 @@ Covers the three services now containerized and chart-managed: `XING/` (dashboar
 - Docker
 - `kubectl`
 - `helm` v3
-- A Kubernetes cluster — [`kind`](https://kind.sigs.k8s.io/) for local validation, any managed K8s (EKS/GKE/AKS/DOKS) for a real deployment
+- A Kubernetes cluster — `minikube` or [`kind`](https://kind.sigs.k8s.io/) for local validation; a real managed cluster (currently: GKE via [`terraform/`](../terraform/README.md)) once you're past that
 - An `nginx-ingress` controller installed in the target cluster (only needed if `ingress.enabled: true`)
 - A container registry the cluster can pull from — these instructions assume GHCR (`ghcr.io/<your-github-username>/job-automation-*`)
 
-## 1. Local validation with `kind`
+## 1. Local validation with `minikube`
 
 ```bash
-kind create cluster --name job-automation
+minikube start
 
 docker build -t job-automation-xing:dev ./XING
 docker build -t job-automation-join:dev ./join
 docker build -t job-automation-latex-compiler:dev ./latex-self-hosted
 
-kind load docker-image job-automation-xing:dev --name job-automation
-kind load docker-image job-automation-join:dev --name job-automation
-kind load docker-image job-automation-latex-compiler:dev --name job-automation
+minikube image load job-automation-xing:dev
+minikube image load job-automation-join:dev
+minikube image load job-automation-latex-compiler:dev
 ```
+
+(Using `kind` instead: `kind create cluster` then `kind load docker-image <image> --name kind` for each image.)
 
 Bootstrap the secrets (see step 2), then:
 
@@ -77,6 +79,19 @@ kubectl create secret generic dashboard-basic-auth --from-file=auth -n $NS
 ```
 
 `LATEX_COMPILER_URL` in a `.env` file you use for `--from-env-file` will typically say `http://localhost:5000` (the local-dev default) — this is harmless, the Deployment templates set `LATEX_COMPILER_URL=http://latex-compiler:5000` explicitly in-cluster and it overrides whatever the Secret contains.
+
+## 2.5. Moving off minikube to a real cluster
+
+Once local validation looks good, [`terraform/`](../terraform/README.md) provisions an actual GKE cluster (Autopilot). Nothing there has been applied — it's prep. When ready:
+
+```bash
+cd terraform/environments/gcp
+cp terraform.tfvars.example terraform.tfvars   # fill in your project_id
+terraform init && terraform apply
+terraform output -raw get_credentials_command | bash   # points kubectl/helm at the new cluster
+```
+
+Then repeat steps 2 and 3 below against that cluster instead of minikube. The Terraform module is written so a future move to a different cloud only means adding a new module + environment there — see that README for the contract.
 
 ## 3. Deploy
 

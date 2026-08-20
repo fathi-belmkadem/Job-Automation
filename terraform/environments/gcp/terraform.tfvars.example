@@ -1,0 +1,7 @@
+# Copy to terraform.tfvars and fill in — terraform.tfvars is gitignored,
+# never commit it if you add anything sensitive here later.
+
+project_id  = "your-gcp-project-id"
+region      = "europe-west3"
+cluster_name = "job-automation"
+environment  = "staging" # or "prod"

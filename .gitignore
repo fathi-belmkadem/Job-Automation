@@ -38,6 +38,15 @@ desktop.ini
 deploy/helm/**/charts/
 *.tgz
 
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+!terraform.tfvars.example
+crash.log
+crash.*.log
+
 # Large scraped/debug artifacts
 *.csv
 !**/*.example.csv

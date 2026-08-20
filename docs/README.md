@@ -18,6 +18,7 @@ A shared LaTeX-compilation microservice and a webhook-triggered on-demand varian
 | `tailor cover letter/` | Static HTML front-end for the on-demand "tailor CV + cover letter" n8n webhook | [tailor-cover-letter.md](tailor-cover-letter.md) |
 | `Automated workflows/` | n8n workflow exports: company/contact discovery, bounce cleanup, cold-email sending, and the webhook-driven CV/cover-letter tailoring backend | [automated-workflows.md](automated-workflows.md) |
 | `deploy/helm/job-automation/` | Kubernetes deployment: containerized XING/join/latex-compiler, Helm chart, CI/CD | [deployment.md](deployment.md) |
+| `terraform/` | Cluster infrastructure (GKE, currently) — provisions the Kubernetes cluster the Helm chart deploys into; not applied yet | [../terraform/README.md](../terraform/README.md) |
 
 ## How the pieces fit together
 
